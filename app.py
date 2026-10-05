@@ -32,9 +32,7 @@ import streamlit as st
 st.set_page_config(
     page_title="Hassan Allam Construction | Projects Dashboard",
     page_icon="🏗️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={}
+    layout="wide"
 )
 
 
@@ -355,125 +353,28 @@ st.markdown(
     f"""
 <style>
 
-/* =========================================================
-   STREAMLIT CHROME
-   Hide GitHub / Toolbar / Menu / Footer / Deploy
-   ========================================================= */
-
-header[data-testid="stHeader"] {{
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-}}
-
-[data-testid="stToolbar"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stDecoration"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-#MainMenu {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-.stAppDeployButton {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-footer {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-[data-testid="stStatusWidget"] {{
-    display: none !important;
-    visibility: hidden !important;
-}}
-
-
-/* =========================================================
-   MAIN APPLICATION
-   ========================================================= */
-
 .stApp {{
     background-color: #E7E1D7;
-
     background-image:
-        linear-gradient(
-            rgba(92,78,62,.045) 1px,
-            transparent 1px
-        ),
-
-        linear-gradient(
-            90deg,
-            rgba(92,78,62,.045) 1px,
-            transparent 1px
-        ),
-
-        radial-gradient(
-            circle at 15% 10%,
-            rgba(200,16,46,.055),
-            transparent 28%
-        );
-
-    background-size:
-        32px 32px,
-        32px 32px,
-        100% 100%;
+        linear-gradient(rgba(92,78,62,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92,78,62,.045) 1px, transparent 1px),
+        radial-gradient(circle at 15% 10%, rgba(200,16,46,.055), transparent 28%);
+    background-size: 32px 32px, 32px 32px, 100% 100%;
 }}
-
-
-/* =========================================================
-   MAIN CONTENT
-   ========================================================= */
-
-.block-container {{
-    padding-top: 1.5rem !important;
-    padding-bottom: 2rem !important;
-    max-width: 100% !important;
-}}
-
-
-/* =========================================================
-   SIDEBAR
-   ========================================================= */
 
 [data-testid="stSidebar"] {{
     background: {LIGHT};
     border-top: 5px solid {PRIMARY};
 }}
 
-[data-testid="stSidebar"] > div:first-child {{
-    padding-top: 1rem;
-}}
-
-
-/* =========================================================
-   HEADINGS
-   ========================================================= */
-
-h1,
-h2,
-h3 {{
+h1, h2, h3 {{
     color: {DARK};
 }}
 
-h2,
-h3 {{
+h2, h3 {{
     border-left: 5px solid {PRIMARY};
     padding-left: 10px;
 }}
-
-
-/* =========================================================
-   KPI
-   ========================================================= */
 
 .kpi {{
     background: #ffffff;
@@ -482,9 +383,7 @@ h3 {{
     border-radius: 10px;
     padding: 14px 16px;
     margin-bottom: 10px;
-
-    box-shadow:
-        0 2px 6px rgba(31,41,51,.07);
+    box-shadow: 0 2px 6px rgba(31,41,51,.07);
 }}
 
 .kpi .l {{
@@ -499,11 +398,6 @@ h3 {{
     font-weight: 700;
     color: {DARK};
 }}
-
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
 
 div.stButton > button {{
     border-radius: 8px;
@@ -521,11 +415,6 @@ div.stButton > button:hover {{
     border-color: {PRIMARY};
 }}
 
-
-/* =========================================================
-   HERO
-   ========================================================= */
-
 .hero {{
     background:
         repeating-linear-gradient(
@@ -533,144 +422,55 @@ div.stButton > button:hover {{
             rgba(255,255,255,.04) 0 14px,
             transparent 14px 28px
         ),
+        linear-gradient(120deg,{DARK},#3a4552);
 
-        linear-gradient(
-            120deg,
-            {DARK},
-            #3a4552
-        );
-
-    color: #fff;
-    padding: 38px 34px;
-    border-radius: 6px;
-    border-bottom: 6px solid {PRIMARY};
-    margin-bottom: 22px;
+    color:#fff;
+    padding:38px 34px;
+    border-radius:6px;
+    border-bottom:6px solid {PRIMARY};
+    margin-bottom:22px;
 }}
 
 .hero .co {{
-    color: {PRIMARY};
-    font-weight: 700;
-    letter-spacing: 2px;
-    font-size: 14px;
-    text-transform: uppercase;
-
-    background: #fff;
-
-    display: inline-block;
-
-    padding: 2px 10px;
-    border-radius: 3px;
+    color:{PRIMARY};
+    font-weight:700;
+    letter-spacing:2px;
+    font-size:14px;
+    text-transform:uppercase;
+    background:#fff;
+    display:inline-block;
+    padding:2px 10px;
+    border-radius:3px;
 }}
 
 .hero h1 {{
-    color: #fff;
-    margin: 12px 0 0;
+    color:#fff;
+    margin:12px 0 0;
 }}
 
 .hero p {{
-    margin: 6px 0 0;
-    opacity: .9;
-    font-size: 18px;
+    margin:6px 0 0;
+    opacity:.9;
+    font-size:18px;
 }}
-
-
-/* =========================================================
-   TOP BAR
-   ========================================================= */
 
 .topbar {{
-    border-bottom: 3px solid {PRIMARY};
-    padding: 4px 0 6px;
-    margin-bottom: 10px;
-
-    color: {DARK};
-
-    font-weight: 700;
-    letter-spacing: 1px;
-    font-size: 13px;
-
-    text-transform: uppercase;
+    border-bottom:3px solid {PRIMARY};
+    padding:4px 0 6px;
+    margin-bottom:10px;
+    color:{DARK};
+    font-weight:700;
+    letter-spacing:1px;
+    font-size:13px;
+    text-transform:uppercase;
 }}
-
-
-/* =========================================================
-   BADGE
-   ========================================================= */
 
 .badge {{
-    display: inline-block;
-
-    padding: 5px 12px;
-
-    border-radius: 20px;
-
-    font-weight: 600;
-    font-size: 12px;
-}}
-
-
-/* =========================================================
-   DATAFRAME
-   ========================================================= */
-
-[data-testid="stDataFrame"] {{
-    border-radius: 8px;
-    overflow: hidden;
-}}
-
-
-/* =========================================================
-   FILE UPLOADER
-   ========================================================= */
-
-[data-testid="stFileUploader"] {{
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 5px;
-}}
-
-
-/* =========================================================
-   PLOTLY
-   ========================================================= */
-
-.js-plotly-plot {{
-    border-radius: 8px;
-}}
-
-
-/* =========================================================
-   REMOVE EXTRA TOP SPACE
-   ========================================================= */
-
-section[data-testid="stMain"] {{
-    padding-top: 0 !important;
-}}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 768px) {{
-
-    .block-container {{
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }}
-
-    .hero {{
-        padding: 25px 20px;
-    }}
-
-    .hero h1 {{
-        font-size: 28px;
-    }}
-
-    .hero p {{
-        font-size: 15px;
-    }}
-
+    display:inline-block;
+    padding:5px 12px;
+    border-radius:20px;
+    font-weight:600;
+    font-size:12px;
 }}
 
 </style>
@@ -704,17 +504,19 @@ for key, value in DEFAULT_STATE.items():
 
 @st.cache_data(show_spinner=False)
 def get_sheet_names(file_bytes: bytes) -> list:
-
+    """
+    Return all sheet names from workbook.
+    """
     return pd.ExcelFile(
         BytesIO(file_bytes)
     ).sheet_names
 
 
 @st.cache_data(show_spinner=False)
-def load_excel_data(
-    file_bytes: bytes,
-    sheet_name: str
-) -> pd.DataFrame:
+def load_excel_data(file_bytes: bytes, sheet_name: str) -> pd.DataFrame:
+    """
+    Read Excel sheet and automatically detect header row.
+    """
 
     raw = pd.read_excel(
         BytesIO(file_bytes),
@@ -947,12 +749,7 @@ def open_sheet(sheet_name):
     ss.page = "sheet"
 
 
-def grid(
-    items,
-    callback,
-    prefix,
-    per_row=3
-):
+def grid(items, callback, prefix, per_row=3):
 
     if not items:
         return
@@ -984,10 +781,7 @@ def grid(
 # 11) DELIVERY DASHBOARD
 # ============================================================================
 
-def compute_delivery_status(
-    df,
-    columns
-):
+def compute_delivery_status(df, columns):
 
     def status(row):
 
@@ -999,7 +793,6 @@ def compute_delivery_status(
             actual_col
             and pd.notna(row.get(actual_col))
         ):
-
             return "Delivered"
 
         expected = (
@@ -1019,11 +812,9 @@ def compute_delivery_status(
             and pd.notna(required)
             and expected > required
         ):
-
             return "Delayed"
 
         if pd.notna(expected):
-
             return "Pending / On Track"
 
         return "Unknown"
@@ -1034,10 +825,7 @@ def compute_delivery_status(
     )
 
 
-def show_delivery_dashboard(
-    df,
-    sheet_name
-):
+def show_delivery_dashboard(df, sheet_name):
 
     columns = {
         key: find_col(df, key)
@@ -1045,6 +833,10 @@ def show_delivery_dashboard(
     }
 
     df = df.copy()
+
+    # ------------------------------------------------------------------------
+    # Dates
+    # ------------------------------------------------------------------------
 
     for key in (
         "required_date",
@@ -1061,6 +853,10 @@ def show_delivery_dashboard(
                 errors="coerce"
             )
 
+    # ------------------------------------------------------------------------
+    # Numeric columns
+    # ------------------------------------------------------------------------
+
     for key in (
         "required_qty",
         "delivered_qty",
@@ -1074,6 +870,10 @@ def show_delivery_dashboard(
             df[column] = to_num(
                 df[column]
             )
+
+    # ------------------------------------------------------------------------
+    # Warnings
+    # ------------------------------------------------------------------------
 
     warnings = [
 
@@ -1107,6 +907,10 @@ def show_delivery_dashboard(
                 f"{message}"
             )
 
+    # ------------------------------------------------------------------------
+    # Status
+    # ------------------------------------------------------------------------
+
     if (
         columns["actual_date"]
         or columns["expected_date"]
@@ -1127,6 +931,10 @@ def show_delivery_dashboard(
 
         status_column = None
 
+    # ------------------------------------------------------------------------
+    # Remaining quantity
+    # ------------------------------------------------------------------------
+
     if (
         columns["required_qty"]
         and columns["delivered_qty"]
@@ -1142,6 +950,10 @@ def show_delivery_dashboard(
     else:
 
         remaining_column = columns["remaining_qty"]
+
+    # ------------------------------------------------------------------------
+    # Filters
+    # ------------------------------------------------------------------------
 
     st.subheader("🔎 Filters")
 
@@ -1220,11 +1032,14 @@ def show_delivery_dashboard(
                         date_range[0],
                         date_range[1]
                     )
-                    |
-                    df[columns["expected_date"]].isna()
+                    | df[columns["expected_date"]].isna()
                 )
 
                 df = df[mask]
+
+    # ------------------------------------------------------------------------
+    # KPIs
+    # ------------------------------------------------------------------------
 
     today = pd.Timestamp.today().normalize()
 
@@ -1249,23 +1064,17 @@ def show_delivery_dashboard(
             [
                 (
                     "Delivered",
-                    int(
-                        values.str.contains("deliver").sum()
-                    )
+                    int(values.str.contains("deliver").sum())
                 ),
 
                 (
                     "Pending",
-                    int(
-                        values.str.contains("pending|track").sum()
-                    )
+                    int(values.str.contains("pending|track").sum())
                 ),
 
                 (
                     "Delayed",
-                    int(
-                        values.str.contains("delay").sum()
-                    )
+                    int(values.str.contains("delay").sum())
                 )
             ]
         )
@@ -1312,6 +1121,10 @@ def show_delivery_dashboard(
 
     kpi_row(items)
 
+    # ------------------------------------------------------------------------
+    # Table
+    # ------------------------------------------------------------------------
+
     st.subheader("📋 Delivery Table")
 
     show_columns = [
@@ -1338,6 +1151,10 @@ def show_delivery_dashboard(
         width="stretch",
         hide_index=True
     )
+
+    # ------------------------------------------------------------------------
+    # Charts
+    # ------------------------------------------------------------------------
 
     st.subheader("📊 Charts")
 
@@ -1453,10 +1270,7 @@ def show_delivery_dashboard(
 # 12) GENERIC DASHBOARD
 # ============================================================================
 
-def show_generic_dashboard(
-    df,
-    sheet_name
-):
+def show_generic_dashboard(df, sheet_name):
 
     numeric_columns = [
         column
@@ -1470,6 +1284,10 @@ def show_generic_dashboard(
         if df[column].dtype == object
         and 2 <= df[column].nunique() <= 20
     ]
+
+    # ------------------------------------------------------------------------
+    # Filters
+    # ------------------------------------------------------------------------
 
     st.subheader("🔎 Filters")
 
@@ -1520,6 +1338,10 @@ def show_generic_dashboard(
                 .astype(str)
                 .isin(selected)
             ]
+
+    # ------------------------------------------------------------------------
+    # KPIs
+    # ------------------------------------------------------------------------
 
     items = [
         ("Total Records", len(df)),
@@ -1581,6 +1403,10 @@ def show_generic_dashboard(
 
     kpi_row(items[:6])
 
+    # ------------------------------------------------------------------------
+    # Data
+    # ------------------------------------------------------------------------
+
     st.subheader("📋 Data")
 
     st.dataframe(
@@ -1588,6 +1414,10 @@ def show_generic_dashboard(
         width="stretch",
         hide_index=True
     )
+
+    # ------------------------------------------------------------------------
+    # Charts
+    # ------------------------------------------------------------------------
 
     if categorical_columns or numeric_columns:
 
@@ -1644,510 +1474,151 @@ def show_generic_dashboard(
             )
 
 
-# ============================================================================
-# 13) FORMWORK
-# ============================================================================
 
-def is_formwork_sheet(
-    sheet_name,
-    df=None
-):
-
-    name = str(
-        sheet_name
-    ).lower().strip()
-
+def is_formwork_sheet(sheet_name, df=None):
+    """Detect the latest Formwork Construction Types workbook structure."""
+    name = str(sheet_name).lower().strip()
     if name == "workbook index":
         return False
 
     keywords = [
-        "formwork",
-        "villa",
-        "residential building",
-        "commercial building",
-        "warehouse",
-        "office building",
-        "school",
-        "hospital",
-        "mosque",
-        "compound",
-        "industrial building"
+        "formwork", "villa", "residential building", "commercial building",
+        "warehouse", "office building", "school", "hospital", "mosque",
+        "compound", "industrial building"
     ]
-
-    if any(
-        k in name
-        for k in keywords
-    ):
-
+    if any(k in name for k in keywords):
         return True
 
     if df is not None and not df.empty:
-
-        cols = {
-            str(c).strip().lower()
-            for c in df.columns
-        }
-
+        cols = {str(c).strip().lower() for c in df.columns}
         required = {
-            "element / activity",
-            "unit",
-            "quantity",
-            "unit rate (egp)",
-            "budget cost (egp)"
+            "element / activity", "unit", "quantity",
+            "unit rate (egp)", "budget cost (egp)"
         }
-
-        return len(
-            required.intersection(cols)
-        ) >= 4
+        return len(required.intersection(cols)) >= 4
 
     return False
 
 
-def show_formwork_dashboard(
-    df,
-    sheet_name
-):
-
-    st.title(
-        f"🏗️ Formwork Cost — {sheet_name}"
-    )
+def show_formwork_dashboard(df, sheet_name):
+    """Dashboard for one construction type; summary remains tied to that sheet."""
+    st.title(f"🏗️ Formwork Cost — {sheet_name}")
 
     if df is None or df.empty:
-
-        st.warning(
-            "This construction sheet is empty."
-        )
-
+        st.warning("This construction sheet is empty.")
         return
 
+    # Detect columns without relying on formula-calculated values.
     def col(*names):
+        return pick(df, list(names))
 
-        return pick(
-            df,
-            list(names)
-        )
-
-    item_col = col(
-        "Element / Activity",
-        "Element",
-        "Activity"
-    )
-
-    unit_col = col(
-        "Unit"
-    )
-
-    qty_col = col(
-        "Quantity",
-        "Qty"
-    )
-
-    rate_col = col(
-        "Unit Rate (EGP)",
-        "Unit Rate",
-        "Rate"
-    )
-
-    budget_col = col(
-        "Budget Cost (EGP)",
-        "Budget Cost",
-        "Budget"
-    )
-
-    actual_col = col(
-        "Actual Cost (EGP)",
-        "Actual Cost",
-        "Actual"
-    )
-
-    variance_col = col(
-        "Variance (EGP)",
-        "Variance"
-    )
+    item_col = col("Element / Activity", "Element", "Activity")
+    unit_col = col("Unit")
+    qty_col = col("Quantity", "Qty")
+    rate_col = col("Unit Rate (EGP)", "Unit Rate", "Rate")
+    budget_col = col("Budget Cost (EGP)", "Budget Cost", "Budget")
+    actual_col = col("Actual Cost (EGP)", "Actual Cost", "Actual")
+    variance_col = col("Variance (EGP)", "Variance")
 
     work = df.copy()
-
+    # Ignore the embedded summary section and TOTAL row.
     if item_col:
-
-        work = work[
-            work[item_col].notna()
-        ].copy()
-
-        work = work[
-            ~work[item_col]
-            .astype(str)
-            .str.upper()
-            .isin(
-                [
-                    "TOTAL",
-                    "SUMMARY BY CATEGORY"
-                ]
-            )
-        ].copy()
-
-        work = work[
-            ~work[item_col]
-            .astype(str)
-            .str.contains(
-                "^Category$",
-                case=False,
-                regex=True
-            )
-        ].copy()
+        work = work[work[item_col].notna()].copy()
+        work = work[~work[item_col].astype(str).str.upper().isin(["TOTAL", "SUMMARY BY CATEGORY"])].copy()
+        work = work[~work[item_col].astype(str).str.contains("^Category$", case=False, regex=True)].copy()
 
     if qty_col:
-        work[qty_col] = to_num(
-            work[qty_col]
-        )
-
+        work[qty_col] = to_num(work[qty_col])
     if rate_col:
-        work[rate_col] = to_num(
-            work[rate_col]
-        )
-
+        work[rate_col] = to_num(work[rate_col])
     if budget_col:
-        work[budget_col] = to_num(
-            work[budget_col]
-        )
-
+        work[budget_col] = to_num(work[budget_col])
     if actual_col:
-        work[actual_col] = to_num(
-            work[actual_col]
-        )
-
+        work[actual_col] = to_num(work[actual_col])
     if variance_col:
-        work[variance_col] = to_num(
-            work[variance_col]
-        )
+        work[variance_col] = to_num(work[variance_col])
 
-    if (
-        budget_col is None
-        and qty_col
-        and rate_col
-    ):
-
-        work[
-            "Budget Cost (Calculated)"
-        ] = (
-            work[qty_col]
-            * work[rate_col]
-        )
-
-        budget_series = work[
-            "Budget Cost (Calculated)"
-        ]
-
+    # Recalculate when Excel formulas have no cached values.
+    if budget_col is None and qty_col and rate_col:
+        work["Budget Cost (Calculated)"] = work[qty_col] * work[rate_col]
+        budget_series = work["Budget Cost (Calculated)"]
     elif budget_col:
-
-        budget_series = work[
-            budget_col
-        ]
-
+        budget_series = work[budget_col]
     else:
+        budget_series = pd.Series(dtype=float)
 
-        budget_series = pd.Series(
-            dtype=float
-        )
-
-    if (
-        actual_col
-        and work[actual_col].notna().any()
-    ):
-
-        actual_series = work[
-            actual_col
-        ]
-
+    if actual_col and work[actual_col].notna().any():
+        actual_series = work[actual_col]
     else:
+        actual_series = budget_series * 0.90 if not budget_series.empty else pd.Series(dtype=float)
 
-        actual_series = (
-            budget_series * 0.90
-            if not budget_series.empty
-            else pd.Series(dtype=float)
-        )
+    total_budget = safe_sum(budget_series)
+    total_actual = safe_sum(actual_series)
+    variance = total_budget - total_actual if pd.notna(total_budget) and pd.notna(total_actual) else float("nan")
+    used = (total_actual / total_budget * 100) if pd.notna(total_budget) and total_budget else float("nan")
 
-    total_budget = safe_sum(
-        budget_series
-    )
+    kpi_row([
+        ("Construction Type", sheet_name),
+        ("Total Budget", fmt(total_budget)),
+        ("Actual Cost", fmt(total_actual)),
+        ("Remaining / Variance", fmt(variance)),
+        ("Cost Used", f"{used:,.1f}%" if pd.notna(used) else "—"),
+    ])
 
-    total_actual = safe_sum(
-        actual_series
-    )
-
-    variance = (
-        total_budget
-        - total_actual
-        if pd.notna(total_budget)
-        and pd.notna(total_actual)
-        else float("nan")
-    )
-
-    used = (
-        total_actual
-        / total_budget
-        * 100
-        if pd.notna(total_budget)
-        and total_budget
-        else float("nan")
-    )
-
-    kpi_row(
-        [
-            (
-                "Construction Type",
-                sheet_name
-            ),
-
-            (
-                "Total Budget",
-                fmt(total_budget)
-            ),
-
-            (
-                "Actual Cost",
-                fmt(total_actual)
-            ),
-
-            (
-                "Remaining / Variance",
-                fmt(variance)
-            ),
-
-            (
-                "Cost Used",
-                f"{used:,.1f}%"
-                if pd.notna(used)
-                else "—"
-            ),
-        ]
-    )
-
-    st.subheader(
-        "📋 Formwork Cost Breakdown"
-    )
-
-    display_cols = [
-        c
-        for c in [
-            item_col,
-            unit_col,
-            qty_col,
-            rate_col,
-            budget_col,
-            actual_col,
-            variance_col
-        ]
-        if c
-    ]
-
+    st.subheader("📋 Formwork Cost Breakdown")
+    display_cols = [c for c in [item_col, unit_col, qty_col, rate_col, budget_col, actual_col, variance_col] if c]
     if display_cols:
-
-        shown = work[
-            display_cols
-        ].copy()
-
+        shown = work[display_cols].copy()
         rename = {
-            item_col:
-                "Element / Activity"
-                if item_col else "",
-
-            unit_col:
-                "Unit"
-                if unit_col else "",
-
-            qty_col:
-                "Quantity"
-                if qty_col else "",
-
-            rate_col:
-                "Unit Rate (EGP)"
-                if rate_col else "",
-
-            budget_col:
-                "Budget Cost (EGP)"
-                if budget_col else "",
-
-            actual_col:
-                "Actual Cost (EGP)"
-                if actual_col else "",
-
-            variance_col:
-                "Variance (EGP)"
-                if variance_col else "",
+            item_col: "Element / Activity" if item_col else "",
+            unit_col: "Unit" if unit_col else "",
+            qty_col: "Quantity" if qty_col else "",
+            rate_col: "Unit Rate (EGP)" if rate_col else "",
+            budget_col: "Budget Cost (EGP)" if budget_col else "",
+            actual_col: "Actual Cost (EGP)" if actual_col else "",
+            variance_col: "Variance (EGP)" if variance_col else "",
         }
+        shown = shown.rename(columns={k:v for k,v in rename.items() if k})
+        if "Budget Cost (EGP)" not in shown.columns and not budget_series.empty:
+            shown["Budget Cost (EGP)"] = budget_series.values
+        if "Actual Cost (EGP)" not in shown.columns and not actual_series.empty:
+            shown["Actual Cost (EGP)"] = actual_series.values
+        if "Variance (EGP)" not in shown.columns and not budget_series.empty:
+            shown["Variance (EGP)"] = budget_series.values - actual_series.values
+        st.dataframe(shown, use_container_width=True, hide_index=True)
 
-        shown = shown.rename(
-            columns={
-                k: v
-                for k, v in rename.items()
-                if k
-            }
-        )
-
-        if (
-            "Budget Cost (EGP)"
-            not in shown.columns
-            and not budget_series.empty
-        ):
-
-            shown[
-                "Budget Cost (EGP)"
-            ] = budget_series.values
-
-        if (
-            "Actual Cost (EGP)"
-            not in shown.columns
-            and not actual_series.empty
-        ):
-
-            shown[
-                "Actual Cost (EGP)"
-            ] = actual_series.values
-
-        if (
-            "Variance (EGP)"
-            not in shown.columns
-            and not budget_series.empty
-        ):
-
-            shown[
-                "Variance (EGP)"
-            ] = (
-                budget_series.values
-                - actual_series.values
-            )
-
-        st.dataframe(
-            shown,
-            use_container_width=True,
-            hide_index=True
-        )
-
-    st.subheader(
-        "📊 Summary by Category"
-    )
-
+    st.subheader("📊 Summary by Category")
     if item_col and not work.empty:
-
         cats = []
-
-        for value in work[
-            item_col
-        ].astype(str):
-
-            if (
-                "erection"
-                in value.lower()
-                or
-                "stripping"
-                in value.lower()
-            ):
-
-                category = (
-                    "Labor / Installation"
-                )
-
-            elif (
-                "consumable"
-                in value.lower()
-            ):
-
-                category = (
-                    "Consumables"
-                )
-
+        for value in work[item_col].astype(str):
+            if "erection" in value.lower() or "stripping" in value.lower():
+                category = "Labor / Installation"
+            elif "consumable" in value.lower():
+                category = "Consumables"
             else:
-
-                category = (
-                    "Formwork Activities"
-                )
-
+                category = "Formwork Activities"
             if category not in cats:
                 cats.append(category)
 
         rows = []
-
         for category in cats:
+            mask = work[item_col].astype(str).map(lambda x: (
+                ("erection" in x.lower() or "stripping" in x.lower()) if category == "Labor / Installation"
+                else ("consumable" in x.lower()) if category == "Consumables"
+                else ("erection" not in x.lower() and "stripping" not in x.lower() and "consumable" not in x.lower())
+            ))
+            rows.append({
+                "Category": category,
+                "Budget": safe_sum(budget_series[mask]),
+                "Actual": safe_sum(actual_series[mask]),
+                "Variance": safe_sum(budget_series[mask] - actual_series[mask]),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-            mask = work[
-                item_col
-            ].astype(str).map(
-                lambda x: (
-
-                    (
-                        "erection" in x.lower()
-                        or
-                        "stripping" in x.lower()
-                    )
-
-                    if category
-                    == "Labor / Installation"
-
-                    else
-
-                    (
-                        "consumable"
-                        in x.lower()
-                    )
-
-                    if category
-                    == "Consumables"
-
-                    else
-
-                    (
-                        "erection"
-                        not in x.lower()
-                        and
-                        "stripping"
-                        not in x.lower()
-                        and
-                        "consumable"
-                        not in x.lower()
-                    )
-                )
-            )
-
-            rows.append(
-                {
-                    "Category": category,
-
-                    "Budget":
-                        safe_sum(
-                            budget_series[mask]
-                        ),
-
-                    "Actual":
-                        safe_sum(
-                            actual_series[mask]
-                        ),
-
-                    "Variance":
-                        safe_sum(
-                            budget_series[mask]
-                            - actual_series[mask]
-                        ),
-                }
-            )
-
-        st.dataframe(
-            pd.DataFrame(rows),
-            use_container_width=True,
-            hide_index=True
-        )
-
-    st.caption(
-        "The workbook's Summary is embedded in the same "
-        "construction-type worksheet. This dashboard reads "
-        "that worksheet directly and recalculates totals when "
-        "Excel formula cache values are unavailable."
-    )
+    st.caption("The workbook's Summary is embedded in the same construction-type worksheet. This dashboard reads that worksheet directly and recalculates totals when Excel formula cache values are unavailable.")
 
 
-def show_dashboard(
-    df,
-    sheet_name
-):
+def show_dashboard(df, sheet_name):
 
     st.title(
         f"{sheet_name} Dashboard"
@@ -2164,15 +1635,8 @@ def show_dashboard(
     is_delivery = (
         "deliver" in sheet_name.lower()
         or (
-            find_col(
-                df,
-                "expected_date"
-            )
-            and
-            find_col(
-                df,
-                "required_date"
-            )
+            find_col(df, "expected_date")
+            and find_col(df, "required_date")
         )
     )
 
@@ -2192,16 +1656,14 @@ def show_dashboard(
 
 
 # ============================================================================
-# 14) SHEET CLASSIFICATION
+# 13) SHEET CLASSIFICATION
 # ============================================================================
 
-def classify_sheet(
-    sheet_name,
-    df=None
-):
+def classify_sheet(sheet_name, df=None):
 
     name = sheet_name.lower().strip()
 
+    # Strong name-based detection
     if (
         "pipeline" in name
         and any(
@@ -2227,6 +1689,7 @@ def classify_sheet(
 
         return "projects"
 
+    # Cost / transaction sheets
     if any(
         word in name
         for word in [
@@ -2260,6 +1723,7 @@ def classify_sheet(
 
                 return "details"
 
+    # Column-based detection
     if df is not None and not df.empty:
 
         project_id = pick(
@@ -2292,52 +1756,35 @@ def classify_sheet(
             DETAIL_COLS["planned"]
         )
 
+        # Pipeline
         if (
             (pipeline_id or pipeline_name)
             and (
                 actual
                 or planned
-                or pick(
-                    df,
-                    PIPELINE_COLS["progress"]
-                )
-                or pick(
-                    df,
-                    PIPELINE_COLS["status"]
-                )
+                or pick(df, PIPELINE_COLS["progress"])
+                or pick(df, PIPELINE_COLS["status"])
             )
         ):
 
+            # If it has detail-level item/category/date
             if (
-                pick(
-                    df,
-                    DETAIL_COLS["item"]
-                )
-                or
-                pick(
-                    df,
-                    DETAIL_COLS["category"]
-                )
-                or
-                pick(
-                    df,
-                    DETAIL_COLS["date"]
-                )
+                pick(df, DETAIL_COLS["item"])
+                or pick(df, DETAIL_COLS["category"])
+                or pick(df, DETAIL_COLS["date"])
             ):
 
                 return "details"
 
             return "pipelines"
 
+        # Project
         if (
             project_id
             or project_name
         ):
 
-            if (
-                not pipeline_id
-                and not pipeline_name
-            ):
+            if not pipeline_id and not pipeline_name:
 
                 return "projects"
 
@@ -2345,14 +1792,10 @@ def classify_sheet(
 
 
 # ============================================================================
-# 15) PIPELINE STATUS
+# 14) PIPELINE STATUS
 # ============================================================================
 
-def pipeline_state(
-    status,
-    progress,
-    end
-):
+def pipeline_state(status, progress, end):
 
     status_text = str(
         status
@@ -2416,61 +1859,47 @@ def pipeline_state(
 
 
 # ============================================================================
-# 16) BUILD PROJECT / PIPELINE MODEL
+# 15) BUILD PROJECT / PIPELINE MODEL
 # ============================================================================
 
 @st.cache_data(show_spinner=False)
-def build_model(
-    file_bytes: bytes
-) -> dict:
+def build_model(file_bytes: bytes) -> dict:
 
     sheet_names = get_sheet_names(
         file_bytes
     )
 
+    # ------------------------------------------------------------------------
+    # Latest Formwork Construction Types workbook
+    # Each construction type is a separate worksheet and its summary lives
+    # inside that same worksheet.
+    # ------------------------------------------------------------------------
     formwork_sheets = []
-
     for sheet_name in sheet_names:
-
         try:
-
-            df = load_excel_data(
-                file_bytes,
-                sheet_name
-            )
-
-            if is_formwork_sheet(
-                sheet_name,
-                df
-            ):
-
-                formwork_sheets.append(
-                    sheet_name
-                )
-
+            df = load_excel_data(file_bytes, sheet_name)
+            if is_formwork_sheet(sheet_name, df):
+                formwork_sheets.append(sheet_name)
         except Exception:
-
             pass
 
     if formwork_sheets:
-
         return {
             "ok": False,
             "mode": "formwork",
             "role": {},
-            "other": [
-                x
-                for x in sheet_names
-                if x not in formwork_sheets
-            ],
-            "formwork_sheets":
-                formwork_sheets,
+            "other": [x for x in sheet_names if x not in formwork_sheets],
+            "formwork_sheets": formwork_sheets,
             "warnings": []
         }
 
     classified = {}
 
     other_sheets = []
+
+    # ------------------------------------------------------------------------
+    # Classify every sheet
+    # ------------------------------------------------------------------------
 
     for sheet_name in sheet_names:
 
@@ -2499,9 +1928,7 @@ def build_model(
             classified.setdefault(
                 role,
                 []
-            ).append(
-                sheet_name
-            )
+            ).append(sheet_name)
 
         else:
 
@@ -2511,35 +1938,38 @@ def build_model(
 
     warnings = []
 
+    # ------------------------------------------------------------------------
+    # Select primary sheets
+    # ------------------------------------------------------------------------
+
     project_sheet = (
-        classified
-        .get("projects", [None])[0]
+        classified.get("projects", [None])[0]
     )
 
     pipeline_sheet = (
-        classified
-        .get("pipelines", [None])[0]
+        classified.get("pipelines", [None])[0]
     )
 
     detail_sheet = (
-        classified
-        .get("details", [None])[0]
+        classified.get("details", [None])[0]
     )
 
+    # Additional project/pipeline/detail sheets
     extra_project_sheets = (
-        classified
-        .get("projects", [])[1:]
+        classified.get("projects", [])[1:]
     )
 
     extra_pipeline_sheets = (
-        classified
-        .get("pipelines", [])[1:]
+        classified.get("pipelines", [])[1:]
     )
 
     extra_detail_sheets = (
-        classified
-        .get("details", [])[1:]
+        classified.get("details", [])[1:]
     )
+
+    # ------------------------------------------------------------------------
+    # No project/pipeline model
+    # ------------------------------------------------------------------------
 
     if (
         project_sheet is None
@@ -2555,18 +1985,24 @@ def build_model(
             ]
         }
 
+    # ------------------------------------------------------------------------
+    # Load Projects
+    # ------------------------------------------------------------------------
+
     if project_sheet:
 
         P = load_excel_data(
             file_bytes,
             project_sheet
-        ).reset_index(
-            drop=True
-        )
+        ).reset_index(drop=True)
 
     else:
 
         P = pd.DataFrame()
+
+    # ------------------------------------------------------------------------
+    # Load Pipelines
+    # ------------------------------------------------------------------------
 
     pipeline_frames = []
 
@@ -2600,6 +2036,10 @@ def build_model(
 
         L = pd.DataFrame()
 
+    # ------------------------------------------------------------------------
+    # Load Details
+    # ------------------------------------------------------------------------
+
     detail_frames = []
 
     if detail_sheet:
@@ -2632,9 +2072,9 @@ def build_model(
 
         D = None
 
-    # ------------------------------------------------------------------------
+    # =========================================================================
     # PROJECTS
-    # ------------------------------------------------------------------------
+    # =========================================================================
 
     if not P.empty:
 
@@ -2651,8 +2091,7 @@ def build_model(
         if not project_key_column:
 
             warnings.append(
-                "Projects sheet does not contain "
-                "Project ID or Project Name."
+                "Projects sheet does not contain Project ID or Project Name."
             )
 
             P = pd.DataFrame()
@@ -2668,12 +2107,11 @@ def build_model(
                 P["_key"] != ""
             ].copy()
 
+            # Project Name
             if project_columns["name"]:
 
                 P["_name"] = (
-                    P[
-                        project_columns["name"]
-                    ]
+                    P[project_columns["name"]]
                     .map(normalize_text)
                 )
 
@@ -2681,6 +2119,7 @@ def build_model(
 
                 P["_name"] = P["_key"]
 
+            # Remove duplicate projects
             duplicate_projects = P[
                 P["_key"].duplicated()
             ]
@@ -2697,12 +2136,11 @@ def build_model(
                     keep="first"
                 )
 
+            # Financial columns
             if project_columns["budget"]:
 
                 P["_budget"] = to_num(
-                    P[
-                        project_columns["budget"]
-                    ]
+                    P[project_columns["budget"]]
                 )
 
             else:
@@ -2712,9 +2150,7 @@ def build_model(
             if project_columns["cost"]:
 
                 P["_cost"] = to_num(
-                    P[
-                        project_columns["cost"]
-                    ]
+                    P[project_columns["cost"]]
                 )
 
             else:
@@ -2724,9 +2160,7 @@ def build_model(
             if project_columns["progress"]:
 
                 P["_progress"] = to_pct(
-                    P[
-                        project_columns["progress"]
-                    ]
+                    P[project_columns["progress"]]
                 )
 
             else:
@@ -2745,6 +2179,7 @@ def build_model(
             ]
         )
 
+    # Map Project Name -> Project Key
     name_to_key = {}
 
     if not P.empty:
@@ -2758,9 +2193,9 @@ def build_model(
             )
         }
 
-    # ------------------------------------------------------------------------
+    # =========================================================================
     # PIPELINES
-    # ------------------------------------------------------------------------
+    # =========================================================================
 
     if not L.empty:
 
@@ -2768,6 +2203,10 @@ def build_model(
             L,
             PIPELINE_COLS
         )
+
+        # ------------------------------------------------------------
+        # Project relation
+        # ------------------------------------------------------------
 
         project_id_column = (
             pipeline_columns["proj_id"]
@@ -2783,18 +2222,14 @@ def build_model(
         ):
 
             L["_project_key"] = (
-                L[
-                    project_id_column
-                ]
+                L[project_id_column]
                 .map(normalize_text)
             )
 
         elif project_name_column:
 
             L["_project_key"] = (
-                L[
-                    project_name_column
-                ]
+                L[project_name_column]
                 .map(
                     lambda x:
                     name_to_key.get(
@@ -2806,9 +2241,7 @@ def build_model(
 
         elif len(P) == 1:
 
-            L["_project_key"] = (
-                P["_key"].iloc[0]
-            )
+            L["_project_key"] = P["_key"].iloc[0]
 
             warnings.append(
                 "Pipelines had no Project ID/Project Name column. "
@@ -2823,6 +2256,10 @@ def build_model(
                 "Some pipelines could not be linked to a project."
             )
 
+        # ------------------------------------------------------------
+        # Pipeline ID / Name
+        # ------------------------------------------------------------
+
         pipeline_id_column = (
             pipeline_columns["id"]
         )
@@ -2834,18 +2271,14 @@ def build_model(
         if pipeline_id_column:
 
             L["_pid"] = (
-                L[
-                    pipeline_id_column
-                ]
+                L[pipeline_id_column]
                 .map(normalize_text)
             )
 
         elif pipeline_name_column:
 
             L["_pid"] = (
-                L[
-                    pipeline_name_column
-                ]
+                L[pipeline_name_column]
                 .map(normalize_text)
             )
 
@@ -2864,9 +2297,7 @@ def build_model(
         if pipeline_name_column:
 
             L["_name"] = (
-                L[
-                    pipeline_name_column
-                ]
+                L[pipeline_name_column]
                 .map(normalize_text)
             )
 
@@ -2874,12 +2305,18 @@ def build_model(
 
             L["_name"] = L["_pid"]
 
+        # ------------------------------------------------------------
+        # Internal unique pipeline key
+        # Project + Pipeline
+        # ------------------------------------------------------------
+
         L["_pk"] = (
             L["_project_key"].astype(str)
             + "||"
             + L["_pid"].astype(str)
         )
 
+        # Duplicate pipelines
         duplicate_mask = L["_pk"].duplicated(
             keep=False
         )
@@ -2889,9 +2326,7 @@ def build_model(
             L["_pk"] = (
                 L["_pk"]
                 + "#"
-                + L.groupby("_pk")
-                .cumcount()
-                .astype(str)
+                + L.groupby("_pk").cumcount().astype(str)
             )
 
             warnings.append(
@@ -2911,9 +2346,9 @@ def build_model(
             ]
         )
 
-    # ------------------------------------------------------------------------
-    # AUTO CREATE PROJECTS
-    # ------------------------------------------------------------------------
+    # =========================================================================
+    # AUTO CREATE PROJECTS FROM PIPELINES
+    # =========================================================================
 
     if not L.empty:
 
@@ -2947,20 +2382,11 @@ def build_model(
 
             stub_projects = pd.DataFrame(
                 {
-                    "_key":
-                        missing_projects,
-
-                    "_name":
-                        missing_projects,
-
-                    "_budget":
-                        float("nan"),
-
-                    "_cost":
-                        float("nan"),
-
-                    "_progress":
-                        float("nan")
+                    "_key": missing_projects,
+                    "_name": missing_projects,
+                    "_budget": float("nan"),
+                    "_cost": float("nan"),
+                    "_progress": float("nan")
                 }
             )
 
@@ -2972,22 +2398,22 @@ def build_model(
                 ignore_index=True
             )
 
-    # ------------------------------------------------------------------------
+    # =========================================================================
     # DETAILS
-    # ------------------------------------------------------------------------
+    # =========================================================================
 
     dsum = None
 
-    if (
-        D is not None
-        and not D.empty
-        and not L.empty
-    ):
+    if D is not None and not D.empty and not L.empty:
 
         detail_columns = cols_of(
             D,
             DETAIL_COLS
         )
+
+        # ------------------------------------------------------------
+        # Pipeline ID / Name
+        # ------------------------------------------------------------
 
         detail_pipeline_id = (
             detail_columns["id"]
@@ -3000,31 +2426,30 @@ def build_model(
         if detail_pipeline_id:
 
             D["_pid"] = (
-                D[
-                    detail_pipeline_id
-                ]
+                D[detail_pipeline_id]
                 .map(normalize_text)
             )
 
         elif detail_pipeline_name:
 
             D["_pid"] = (
-                D[
-                    detail_pipeline_name
-                ]
+                D[detail_pipeline_name]
                 .map(normalize_text)
             )
 
         else:
 
             warnings.append(
-                "Pipeline Details sheet has no "
-                "Pipeline ID or Pipeline Name."
+                "Pipeline Details sheet has no Pipeline ID or Pipeline Name."
             )
 
             D = None
 
         if D is not None:
+
+            # --------------------------------------------------------
+            # Project relation
+            # --------------------------------------------------------
 
             detail_project_id = (
                 detail_columns["proj_id"]
@@ -3037,18 +2462,14 @@ def build_model(
             if detail_project_id:
 
                 D["_project_key"] = (
-                    D[
-                        detail_project_id
-                    ]
+                    D[detail_project_id]
                     .map(normalize_text)
                 )
 
             elif detail_project_name:
 
                 D["_project_key"] = (
-                    D[
-                        detail_project_name
-                    ]
+                    D[detail_project_name]
                     .map(
                         lambda x:
                         name_to_key.get(
@@ -3061,6 +2482,10 @@ def build_model(
             else:
 
                 D["_project_key"] = None
+
+            # --------------------------------------------------------
+            # Match details to pipeline
+            # --------------------------------------------------------
 
             if D["_project_key"].notna().any():
 
@@ -3114,12 +2539,14 @@ def build_model(
                 )
             ].copy()
 
+            # --------------------------------------------------------
+            # Numeric fields
+            # --------------------------------------------------------
+
             if detail_columns["planned"]:
 
                 D["_planned"] = to_num(
-                    D[
-                        detail_columns["planned"]
-                    ]
+                    D[detail_columns["planned"]]
                 )
 
             else:
@@ -3129,14 +2556,16 @@ def build_model(
             if detail_columns["actual"]:
 
                 D["_actual"] = to_num(
-                    D[
-                        detail_columns["actual"]
-                    ]
+                    D[detail_columns["actual"]]
                 )
 
             else:
 
                 D["_actual"] = float("nan")
+
+            # --------------------------------------------------------
+            # Category
+            # --------------------------------------------------------
 
             category_column = (
                 detail_columns["category"]
@@ -3155,12 +2584,14 @@ def build_model(
 
                 D["_cat"] = "All"
 
+            # --------------------------------------------------------
+            # Date
+            # --------------------------------------------------------
+
             if detail_columns["date"]:
 
                 D["_date"] = pd.to_datetime(
-                    D[
-                        detail_columns["date"]
-                    ],
+                    D[detail_columns["date"]],
                     errors="coerce"
                 )
 
@@ -3168,18 +2599,20 @@ def build_model(
 
                 D["_date"] = pd.NaT
 
+            # --------------------------------------------------------
+            # Detail aggregation
+            # --------------------------------------------------------
+
             dsum = (
                 D.groupby("_pk")[
                     ["_planned", "_actual"]
                 ]
-                .sum(
-                    min_count=1
-                )
+                .sum(min_count=1)
             )
 
-    # ------------------------------------------------------------------------
+    # =========================================================================
     # FINANCIAL MODEL
-    # ------------------------------------------------------------------------
+    # =========================================================================
 
     F = pd.DataFrame()
 
@@ -3191,9 +2624,7 @@ def build_model(
                 "_key": L["_project_key"],
                 "Pipeline": L["_name"]
             }
-        ).reset_index(
-            drop=True
-        )
+        ).reset_index(drop=True)
 
         L = L.reset_index(
             drop=True
@@ -3204,33 +2635,33 @@ def build_model(
             index=L.index
         )
 
+        # ------------------------------------------------------------
+        # Budget
+        # ------------------------------------------------------------
+
         if pipeline_columns["budget"]:
 
             F["Budget"] = to_num(
-                L[
-                    pipeline_columns["budget"]
-                ]
+                L[pipeline_columns["budget"]]
             )
 
         else:
 
-            F["Budget"] = (
-                nan_series.copy()
-            )
+            F["Budget"] = nan_series.copy()
+
+        # ------------------------------------------------------------
+        # Planned
+        # ------------------------------------------------------------
 
         if pipeline_columns["planned"]:
 
             planned = to_num(
-                L[
-                    pipeline_columns["planned"]
-                ]
+                L[pipeline_columns["planned"]]
             )
 
         else:
 
-            planned = (
-                nan_series.copy()
-            )
+            planned = nan_series.copy()
 
         if dsum is not None:
 
@@ -3243,26 +2674,24 @@ def build_model(
 
             planned = (
                 planned
-                .fillna(
-                    detail_planned
-                )
+                .fillna(detail_planned)
             )
 
         F["Planned"] = planned
 
+        # ------------------------------------------------------------
+        # Actual
+        # ------------------------------------------------------------
+
         if pipeline_columns["actual"]:
 
             actual = to_num(
-                L[
-                    pipeline_columns["actual"]
-                ]
+                L[pipeline_columns["actual"]]
             )
 
         else:
 
-            actual = (
-                nan_series.copy()
-            )
+            actual = nan_series.copy()
 
         if dsum is not None:
 
@@ -3275,19 +2704,23 @@ def build_model(
 
             actual = (
                 actual
-                .fillna(
-                    detail_actual
-                )
+                .fillna(detail_actual)
             )
 
         F["Actual"] = actual
 
+        # ------------------------------------------------------------
+        # Remaining
+        # Priority:
+        # Excel Remaining
+        # Budget - Actual
+        # Planned - Actual
+        # ------------------------------------------------------------
+
         if pipeline_columns["remaining"]:
 
             remaining = to_num(
-                L[
-                    pipeline_columns["remaining"]
-                ]
+                L[pipeline_columns["remaining"]]
             )
 
         else:
@@ -3309,31 +2742,36 @@ def build_model(
 
         remaining = (
             remaining
-            .fillna(
-                budget_actual
-            )
-            .fillna(
-                planned_actual
-            )
+            .fillna(budget_actual)
+            .fillna(planned_actual)
         )
 
         F["Remaining"] = remaining
+
+        # ------------------------------------------------------------
+        # Variance
+        # Positive = under planned
+        # Negative = over planned
+        # ------------------------------------------------------------
 
         F["Variance"] = (
             F["Planned"]
             - F["Actual"]
         )
 
+        # ------------------------------------------------------------
+        # Progress
+        # ------------------------------------------------------------
+
         if pipeline_columns["progress"]:
 
             F["Progress"] = to_pct(
-                L[
-                    pipeline_columns["progress"]
-                ]
+                L[pipeline_columns["progress"]]
             )
 
         else:
 
+            # Automatic progress from cost
             F["Progress"] = pd.Series(
                 float("nan"),
                 index=L.index
@@ -3345,36 +2783,25 @@ def build_model(
                 & F["Actual"].notna()
             )
 
-            F.loc[
-                valid,
-                "Progress"
-            ] = (
-                F.loc[
-                    valid,
-                    "Actual"
-                ]
-                /
-                F.loc[
-                    valid,
-                    "Budget"
-                ]
+            F.loc[valid, "Progress"] = (
+                F.loc[valid, "Actual"]
+                / F.loc[valid, "Budget"]
                 * 100
             )
 
         F["Progress"] = (
             F["Progress"]
-            .clip(
-                lower=0,
-                upper=100
-            )
+            .clip(lower=0, upper=100)
         )
+
+        # ------------------------------------------------------------
+        # Status
+        # ------------------------------------------------------------
 
         if pipeline_columns["end"]:
 
             end_dates = pd.to_datetime(
-                L[
-                    pipeline_columns["end"]
-                ],
+                L[pipeline_columns["end"]],
                 errors="coerce"
             )
 
@@ -3404,11 +2831,7 @@ def build_model(
                 progress,
                 end_date
             )
-
-            for status,
-            progress,
-            end_date
-
+            for status, progress, end_date
             in zip(
                 raw_status,
                 F["Progress"],
@@ -3416,10 +2839,12 @@ def build_model(
             )
         ]
 
-    # ------------------------------------------------------------------------
-    # FINANCIAL SAFETY
-    # ------------------------------------------------------------------------
-
+    # =========================================================================
+    # FINAL FINANCIAL MODEL SAFETY
+    # =========================================================================
+    # Always expose the canonical financial columns used by every page.
+    # This prevents KeyError when an Excel file has a different/missing
+    # Actual Cost column or when a sheet is partially populated.
     required_financial_columns = {
         "Budget": float("nan"),
         "Planned": float("nan"),
@@ -3430,130 +2855,60 @@ def build_model(
         "State": "Unknown",
     }
 
-    if (
-        F is None
-        or not isinstance(
-            F,
-            pd.DataFrame
-        )
-    ):
-
+    if F is None or not isinstance(F, pd.DataFrame):
         F = pd.DataFrame()
 
-    for col, default in (
-        required_financial_columns.items()
-    ):
-
+    for col, default in required_financial_columns.items():
         if col not in F.columns:
-
             F[col] = default
 
+    # Make sure numeric financial columns are always numeric.
     for col in [
-        "Budget",
-        "Planned",
-        "Actual",
-        "Remaining",
-        "Variance",
-        "Progress"
+        "Budget", "Planned", "Actual", "Remaining",
+        "Variance", "Progress"
     ]:
+        F[col] = pd.to_numeric(F[col], errors="coerce")
 
-        F[col] = pd.to_numeric(
-            F[col],
-            errors="coerce"
-        )
-
+    # Recalculate derived values safely.
     if not F.empty:
-
-        missing_remaining = (
-            F["Remaining"].isna()
+        missing_remaining = F["Remaining"].isna()
+        F.loc[missing_remaining, "Remaining"] = (
+            F.loc[missing_remaining, "Budget"]
+            - F.loc[missing_remaining, "Actual"]
         )
 
-        F.loc[
-            missing_remaining,
-            "Remaining"
-        ] = (
-            F.loc[
-                missing_remaining,
-                "Budget"
-            ]
-            -
-            F.loc[
-                missing_remaining,
-                "Actual"
-            ]
+        missing_variance = F["Variance"].isna()
+        F.loc[missing_variance, "Variance"] = (
+            F.loc[missing_variance, "Planned"]
+            - F.loc[missing_variance, "Actual"]
         )
 
-        missing_variance = (
-            F["Variance"].isna()
-        )
-
-        F.loc[
-            missing_variance,
-            "Variance"
-        ] = (
-            F.loc[
-                missing_variance,
-                "Planned"
-            ]
-            -
-            F.loc[
-                missing_variance,
-                "Actual"
-            ]
-        )
-
-        missing_progress = (
-            F["Progress"].isna()
-        )
-
+        missing_progress = F["Progress"].isna()
         valid_progress = (
             F["Budget"].notna()
             & (F["Budget"] > 0)
             & F["Actual"].notna()
         )
-
-        F.loc[
-            missing_progress
-            & valid_progress,
-            "Progress"
-        ] = (
-            F.loc[
-                missing_progress
-                & valid_progress,
-                "Actual"
-            ]
-            /
-            F.loc[
-                missing_progress
-                & valid_progress,
-                "Budget"
-            ]
+        F.loc[missing_progress & valid_progress, "Progress"] = (
+            F.loc[missing_progress & valid_progress, "Actual"]
+            / F.loc[missing_progress & valid_progress, "Budget"]
             * 100
         )
 
-    # ------------------------------------------------------------------------
+    # =========================================================================
     # RETURN MODEL
-    # ------------------------------------------------------------------------
+    # =========================================================================
 
     role = {}
 
     if project_sheet:
-
-        role["projects"] = (
-            project_sheet
-        )
+        role["projects"] = project_sheet
 
     if pipeline_sheet:
-
-        role["pipelines"] = (
-            pipeline_sheet
-        )
+        role["pipelines"] = pipeline_sheet
 
     if detail_sheet:
-
-        role["details"] = (
-            detail_sheet
-        )
+        role["details"] = detail_sheet
 
     return {
         "ok": True,
@@ -3568,7 +2923,7 @@ def build_model(
 
 
 # ============================================================================
-# 17) PROJECT SUMMARY
+# 16) PROJECT SUMMARY
 # ============================================================================
 
 def summarize(
@@ -3591,6 +2946,7 @@ def summarize(
             "Delayed": 0
         }
 
+    # Budget
     total_budget = budget
 
     if pd.isna(total_budget):
@@ -3601,12 +2957,14 @@ def summarize(
             min_count=1
         )
 
+    # Planned
     total_planned = F[
         "Planned"
     ].sum(
         min_count=1
     )
 
+    # Actual
     total_actual = F[
         "Actual"
     ].sum(
@@ -3620,6 +2978,7 @@ def summarize(
 
         total_actual = cost
 
+    # Remaining
     if (
         pd.notna(total_budget)
         and pd.notna(total_actual)
@@ -3644,6 +3003,7 @@ def summarize(
 
         remaining = float("nan")
 
+    # Weighted progress
     weights = F[
         "Budget"
     ].where(
@@ -3661,25 +3021,17 @@ def summarize(
 
         overall_progress = (
             (
-                F.loc[
-                    valid,
-                    "Progress"
-                ]
-                *
-                weights.loc[
-                    valid
-                ]
+                F.loc[valid, "Progress"]
+                * weights.loc[valid]
             ).sum()
-            /
-            weights.loc[
-                valid
-            ].sum()
+            / weights.loc[valid].sum()
         )
 
     elif F["Progress"].notna().any():
 
         overall_progress = (
-            F["Progress"].mean()
+            F["Progress"]
+            .mean()
         )
 
     else:
@@ -3694,28 +3046,19 @@ def summarize(
         "Overall Progress": overall_progress,
         "Pipelines": len(F),
         "Completed": int(
-            (
-                F["State"]
-                == "Completed"
-            ).sum()
+            (F["State"] == "Completed").sum()
         ),
         "Active": int(
-            (
-                F["State"]
-                == "Active"
-            ).sum()
+            (F["State"] == "Active").sum()
         ),
         "Delayed": int(
-            (
-                F["State"]
-                == "Delayed"
-            ).sum()
+            (F["State"] == "Delayed").sum()
         )
     }
 
 
 # ============================================================================
-# 18) DISPLAY HELPERS
+# 17) DISPLAY HELPERS
 # ============================================================================
 
 def format_value(value):
@@ -3759,15 +3102,10 @@ def show_kpis(data):
 
         if (
             "Progress" in key
-            and isinstance(
-                value,
-                (int, float)
-            )
+            and isinstance(value, (int, float))
         ):
 
-            display = (
-                f"{value:,.1f}%"
-            )
+            display = f"{value:,.1f}%"
 
         elif isinstance(
             value,
@@ -3781,19 +3119,13 @@ def show_kpis(data):
             display = str(value)
 
         items.append(
-            (
-                key,
-                display
-            )
+            (key, display)
         )
 
     kpi_row(items)
 
 
-def info_grid(
-    row,
-    columns
-):
+def info_grid(row, columns):
 
     items = []
 
@@ -3822,10 +3154,7 @@ def info_grid(
 
     columns_ui = st.columns(3)
 
-    for i, (
-        key,
-        value
-    ) in enumerate(items):
+    for i, (key, value) in enumerate(items):
 
         columns_ui[
             i % 3
@@ -3880,7 +3209,7 @@ def cost_chart(
 
 
 # ============================================================================
-# 19) HOME PAGE
+# 18) HOME PAGE
 # ============================================================================
 
 def page_home():
@@ -3929,55 +3258,30 @@ def page_home():
         f"Loaded: {ss.file_name}"
     )
 
-    if (
-        M
-        and M.get("mode") == "formwork"
-    ):
+    if M and M.get("mode") == "formwork":
 
-        st.success(
-            "Formwork Construction Types workbook detected."
-        )
-
-        st.subheader(
-            "🏗️ Construction Types"
-        )
-
-        st.caption(
-            "Each button opens the detailed Formwork Cost + "
-            "Summary for that construction type."
-        )
-
+        st.success("Formwork Construction Types workbook detected.")
+        st.subheader("🏗️ Construction Types")
+        st.caption("Each button opens the detailed Formwork Cost + Summary for that construction type.")
         grid(
-            [
-                (
-                    name,
-                    name
-                )
-                for name
-                in M.get(
-                    "formwork_sheets",
-                    []
-                )
-            ],
+            [(name, name) for name in M.get("formwork_sheets", [])],
             open_sheet,
             "formwork_sheet",
             3
         )
-
         return
 
-    if (
-        not M
-        or not M.get("ok")
-    ):
+    if not M or not M.get("ok"):
 
         st.warning(
             "No Projects or Pipelines structure "
             "was detected."
         )
 
-        names = get_sheet_names(
-            ss.file_bytes
+        names = (
+            get_sheet_names(
+                ss.file_bytes
+            )
         )
 
         if names:
@@ -3988,10 +3292,7 @@ def page_home():
 
             grid(
                 [
-                    (
-                        name,
-                        name
-                    )
+                    (name, name)
                     for name in names
                 ],
                 open_sheet,
@@ -4000,6 +3301,10 @@ def page_home():
             )
 
         return
+
+    # ------------------------------------------------------------------------
+    # Workbook KPIs
+    # ------------------------------------------------------------------------
 
     project_count = len(
         M["P"]
@@ -4037,31 +3342,20 @@ def page_home():
 
     kpi_row(
         [
-            (
-                "Projects",
-                project_count
-            ),
-
-            (
-                "Pipelines",
-                pipeline_count
-            ),
-
+            ("Projects", project_count),
+            ("Pipelines", pipeline_count),
             (
                 "Total Budget",
                 fmt(total_budget)
             ),
-
             (
                 "Total Actual Cost",
                 fmt(total_actual)
             ),
-
             (
                 "Delayed Pipelines",
                 delayed
             ),
-
             (
                 "Completed Pipelines",
                 completed
@@ -4075,6 +3369,10 @@ def page_home():
         args=("projects",),
         width="stretch"
     )
+
+    # ------------------------------------------------------------------------
+    # Detected Sheets
+    # ------------------------------------------------------------------------
 
     if M.get("role"):
 
@@ -4090,6 +3388,10 @@ def page_home():
                 f"**{role.title()}** → `{sheet_name}`"
             )
 
+    # ------------------------------------------------------------------------
+    # Warnings
+    # ------------------------------------------------------------------------
+
     for warning in M.get(
         "warnings",
         []
@@ -4099,6 +3401,10 @@ def page_home():
             "⚠ " + warning
         )
 
+    # ------------------------------------------------------------------------
+    # Other Sheets
+    # ------------------------------------------------------------------------
+
     if M.get("other"):
 
         st.subheader(
@@ -4107,10 +3413,7 @@ def page_home():
 
         grid(
             [
-                (
-                    name,
-                    name
-                )
+                (name, name)
                 for name in M["other"]
             ],
             open_sheet,
@@ -4120,7 +3423,7 @@ def page_home():
 
 
 # ============================================================================
-# 20) PROJECTS PAGE
+# 19) PROJECTS PAGE
 # ============================================================================
 
 def page_projects():
@@ -4169,141 +3472,84 @@ def page_projects():
 
 
 # ============================================================================
-# 21) PROJECT PAGE
+# 20) PROJECT PAGE
 # ============================================================================
 
 def page_project():
 
-    project_key = normalize_text(
-        ss.project
-    )
+    # ------------------------------------------------------------------------
+    # Safe project lookup
+    # ------------------------------------------------------------------------
+    project_key = normalize_text(ss.project)
 
-    P = M.get(
-        "P",
-        pd.DataFrame()
-    )
-
-    F = M.get(
-        "F",
-        pd.DataFrame()
-    )
+    P = M.get("P", pd.DataFrame())
+    F = M.get("F", pd.DataFrame())
 
     if P is None or P.empty:
-
-        st.error(
-            "No project data is available."
-        )
-
+        st.error("No project data is available.")
         return
 
+    # Make sure the internal project key always exists.
     if "_key" not in P.columns:
+        project_id_col = pick(P, PROJECT_COLS["id"])
+        project_name_col = pick(P, PROJECT_COLS["name"])
 
-        project_id_col = pick(
-            P,
-            PROJECT_COLS["id"]
-        )
-
-        project_name_col = pick(
-            P,
-            PROJECT_COLS["name"]
-        )
-
-        source_col = (
-            project_id_col
-            or
-            project_name_col
-        )
+        source_col = project_id_col or project_name_col
 
         if not source_col:
-
-            st.error(
-                "Project ID / Project Name "
-                "column was not found."
-            )
-
+            st.error("Project ID / Project Name column was not found.")
             return
 
         P = P.copy()
+        P["_key"] = P[source_col].map(normalize_text)
 
-        P["_key"] = (
-            P[source_col]
-            .map(normalize_text)
-        )
-
+    # Find the project by internal key first.
     project_rows = P[
-        P["_key"]
-        .astype(str)
-        .map(normalize_text)
-        == project_key
+        P["_key"].astype(str).map(normalize_text) == project_key
     ].copy()
 
-    if (
-        project_rows.empty
-        and "_name" in P.columns
-    ):
-
+    # Fallback: the selected value may be the project name.
+    if project_rows.empty and "_name" in P.columns:
         project_rows = P[
-            P["_name"]
-            .astype(str)
-            .map(normalize_key)
-            ==
-            normalize_key(
-                project_key
-            )
+            P["_name"].astype(str).map(normalize_key)
+            == normalize_key(project_key)
         ].copy()
 
     if project_rows.empty:
-
         st.error(
             f"Project '{project_key}' was not found."
         )
-
         st.button(
             "⬅ Back to Projects",
             on_click=go,
             args=("projects",),
             width="stretch"
         )
-
         return
 
-    project_row = (
-        project_rows.iloc[0]
-    )
+    project_row = project_rows.iloc[0]
 
+    # Pipelines are optional. Never access F["_key"] unless the column exists.
     if F is None or F.empty:
-
-        pipeline_rows = (
-            pd.DataFrame()
-        )
-
+        pipeline_rows = pd.DataFrame()
     elif "_key" in F.columns:
-
         pipeline_rows = F[
-            F["_key"]
-            .astype(str)
-            .map(normalize_text)
-            == project_key
+            F["_key"].astype(str).map(normalize_text) == project_key
         ].copy()
-
     elif "_project_key" in F.columns:
-
         pipeline_rows = F[
-            F["_project_key"]
-            .astype(str)
-            .map(normalize_text)
-            == project_key
+            F["_project_key"].astype(str).map(normalize_text) == project_key
         ].copy()
-
     else:
-
-        pipeline_rows = (
-            pd.DataFrame()
-        )
+        pipeline_rows = pd.DataFrame()
 
     project_name = (
         project_row["_name"]
     )
+
+    # ------------------------------------------------------------------------
+    # Header
+    # ------------------------------------------------------------------------
 
     st.markdown(
         f"""
@@ -4318,6 +3564,10 @@ def page_project():
         f"📂 {project_name}"
     )
 
+    # ------------------------------------------------------------------------
+    # Project information
+    # ------------------------------------------------------------------------
+
     st.subheader(
         "Project Information"
     )
@@ -4327,6 +3577,10 @@ def page_project():
         list(P.columns)
     )
 
+    # ------------------------------------------------------------------------
+    # No pipelines
+    # ------------------------------------------------------------------------
+
     if pipeline_rows.empty:
 
         st.warning(
@@ -4335,6 +3589,10 @@ def page_project():
         )
 
         return
+
+    # ------------------------------------------------------------------------
+    # KPIs
+    # ------------------------------------------------------------------------
 
     summary = summarize(
         pipeline_rows,
@@ -4346,6 +3604,10 @@ def page_project():
         summary
     )
 
+    # ------------------------------------------------------------------------
+    # Budget validation
+    # ------------------------------------------------------------------------
+
     if (
         pd.notna(
             project_row["_budget"]
@@ -4353,16 +3615,17 @@ def page_project():
         and pipeline_rows["Budget"]
         .sum(
             min_count=1
-        )
-        >
-        project_row["_budget"]
-        * 1.0001
+        ) > project_row["_budget"] * 1.0001
     ):
 
         st.warning(
             "⚠ The sum of pipeline budgets "
             "is higher than the project's Total Budget."
         )
+
+    # ------------------------------------------------------------------------
+    # Pipelines
+    # ------------------------------------------------------------------------
 
     st.subheader(
         "🔧 Pipelines"
@@ -4385,6 +3648,10 @@ def page_project():
         "pipeline",
         3
     )
+
+    # ------------------------------------------------------------------------
+    # Charts
+    # ------------------------------------------------------------------------
 
     st.subheader(
         "📊 Project Analytics"
@@ -4427,6 +3694,10 @@ def page_project():
         width="stretch"
     )
 
+    # ------------------------------------------------------------------------
+    # Progress
+    # ------------------------------------------------------------------------
+
     if pipeline_rows[
         "Progress"
     ].notna().any():
@@ -4445,6 +3716,10 @@ def page_project():
             ),
             width="stretch"
         )
+
+    # ------------------------------------------------------------------------
+    # Pipeline table
+    # ------------------------------------------------------------------------
 
     st.subheader(
         "📋 Pipelines Table"
@@ -4466,7 +3741,7 @@ def page_project():
 
 
 # ============================================================================
-# 22) PIPELINE PAGE
+# 21) PIPELINE PAGE
 # ============================================================================
 
 def page_pipeline():
@@ -4505,68 +3780,30 @@ def page_pipeline():
 
         raw = raw_rows.iloc[0]
 
-    project_name = pipeline.get(
-        "_key",
-        ""
-    )
+    # Resolve project name safely without assuming _key exists in the raw table.
+    project_name = pipeline.get("_key", "")
 
-    P = M.get(
-        "P",
-        pd.DataFrame()
-    )
-
+    P = M.get("P", pd.DataFrame())
     if P is not None and not P.empty:
-
         if "_key" not in P.columns:
-
-            project_id_col = pick(
-                P,
-                PROJECT_COLS["id"]
-            )
-
-            project_name_col = pick(
-                P,
-                PROJECT_COLS["name"]
-            )
-
-            source_col = (
-                project_id_col
-                or
-                project_name_col
-            )
-
+            project_id_col = pick(P, PROJECT_COLS["id"])
+            project_name_col = pick(P, PROJECT_COLS["name"])
+            source_col = project_id_col or project_name_col
             if source_col:
-
                 P = P.copy()
+                P["_key"] = P[source_col].map(normalize_text)
 
-                P["_key"] = (
-                    P[source_col]
-                    .map(normalize_text)
-                )
-
-        if (
-            "_key" in P.columns
-            and "_name" in P.columns
-        ):
-
+        if "_key" in P.columns and "_name" in P.columns:
             matches = P[
-                P["_key"]
-                .astype(str)
-                .map(normalize_text)
-                ==
-                normalize_text(
-                    pipeline.get(
-                        "_key",
-                        ""
-                    )
-                )
+                P["_key"].astype(str).map(normalize_text)
+                == normalize_text(pipeline.get("_key", ""))
             ]
-
             if not matches.empty:
+                project_name = matches.iloc[0]["_name"]
 
-                project_name = (
-                    matches.iloc[0]["_name"]
-                )
+    # ------------------------------------------------------------------------
+    # Header
+    # ------------------------------------------------------------------------
 
     st.markdown(
         f"""
@@ -4590,6 +3827,10 @@ def page_pipeline():
         f"🔧 {pipeline['Pipeline']}"
     )
 
+    # ------------------------------------------------------------------------
+    # Pipeline information
+    # ------------------------------------------------------------------------
+
     st.subheader(
         "Pipeline Information"
     )
@@ -4599,30 +3840,25 @@ def page_pipeline():
         list(raw.index)
     )
 
+    # ------------------------------------------------------------------------
+    # Financial KPIs
+    # ------------------------------------------------------------------------
+
     show_kpis(
         {
-            "Budget":
-                pipeline["Budget"],
-
-            "Planned Cost":
-                pipeline["Planned"],
-
-            "Actual Cost":
-                pipeline["Actual"],
-
-            "Remaining Cost":
-                pipeline["Remaining"],
-
-            "Cost Variance (Planned − Actual)":
-                pipeline["Variance"],
-
-            "Progress %":
-                pipeline["Progress"],
-
-            "Status":
-                pipeline["State"]
+            "Budget": pipeline["Budget"],
+            "Planned Cost": pipeline["Planned"],
+            "Actual Cost": pipeline["Actual"],
+            "Remaining Cost": pipeline["Remaining"],
+            "Cost Variance (Planned − Actual)": pipeline["Variance"],
+            "Progress %": pipeline["Progress"],
+            "Status": pipeline["State"]
         }
     )
+
+    # ------------------------------------------------------------------------
+    # Progress bar
+    # ------------------------------------------------------------------------
 
     progress = pipeline[
         "Progress"
@@ -4643,9 +3879,12 @@ def page_pipeline():
         )
 
         st.caption(
-            f"Pipeline Progress: "
-            f"{progress_value:.1f}%"
+            f"Pipeline Progress: {progress_value:.1f}%"
         )
+
+    # ------------------------------------------------------------------------
+    # Cost warning
+    # ------------------------------------------------------------------------
 
     if (
         pd.notna(
@@ -4669,6 +3908,10 @@ def page_pipeline():
             "✓ Actual cost is currently below planned cost."
         )
 
+    # ------------------------------------------------------------------------
+    # Cost chart
+    # ------------------------------------------------------------------------
+
     st.subheader(
         "📊 Pipeline Analytics"
     )
@@ -4691,6 +3934,10 @@ def page_pipeline():
             width="stretch"
         )
 
+    # ------------------------------------------------------------------------
+    # Details
+    # ------------------------------------------------------------------------
+
     if (
         D is not None
         and not D.empty
@@ -4702,13 +3949,14 @@ def page_pipeline():
 
         if not details.empty:
 
+            # ------------------------------------------------------------
+            # Cost by Category
+            # ------------------------------------------------------------
+
             category = (
                 details
                 .groupby("_cat")[
-                    [
-                        "_planned",
-                        "_actual"
-                    ]
+                    ["_planned", "_actual"]
                 ]
                 .sum(
                     min_count=1
@@ -4746,10 +3994,13 @@ def page_pipeline():
                 width="stretch"
             )
 
+            # ------------------------------------------------------------
+            # Cumulative Actual
+            # ------------------------------------------------------------
+
             if (
                 details["_date"].notna().any()
-                and
-                details["_actual"].notna().any()
+                and details["_actual"].notna().any()
             ):
 
                 timeline = (
@@ -4783,6 +4034,10 @@ def page_pipeline():
                     width="stretch"
                 )
 
+            # ------------------------------------------------------------
+            # Detail KPIs
+            # ------------------------------------------------------------
+
             detail_planned = details[
                 "_planned"
             ].sum(
@@ -4813,6 +4068,10 @@ def page_pipeline():
                     )
                 ]
             )
+
+            # ------------------------------------------------------------
+            # Detail table
+            # ------------------------------------------------------------
 
             st.subheader(
                 "📋 Pipeline Cost Details"
@@ -4860,7 +4119,7 @@ def page_pipeline():
 
 
 # ============================================================================
-# 23) GENERIC SHEET PAGE
+# 22) GENERIC SHEET PAGE
 # ============================================================================
 
 def page_sheet():
@@ -4883,24 +4142,12 @@ def page_sheet():
         ss.sheet
     )
 
-    if (
-        M
-        and
-        M.get("mode") == "formwork"
-        and
-        ss.sheet in M.get(
-            "formwork_sheets",
-            []
-        )
-    ):
-
+    if M and M.get("mode") == "formwork" and ss.sheet in M.get("formwork_sheets", []):
         show_formwork_dashboard(
             dataframe,
             ss.sheet
         )
-
     else:
-
         show_dashboard(
             dataframe,
             ss.sheet
@@ -4908,7 +4155,7 @@ def page_sheet():
 
 
 # ============================================================================
-# 24) SIDEBAR
+# 23) SIDEBAR
 # ============================================================================
 
 M = None
@@ -4981,10 +4228,7 @@ with st.sidebar:
         if is_new_file:
 
             ss.file_bytes = file_content
-
-            ss.file_name = (
-                uploaded_file.name
-            )
+            ss.file_name = uploaded_file.name
 
             ss.sheet = None
             ss.project = None
@@ -5007,26 +4251,13 @@ with st.sidebar:
     )
 
     # ------------------------------------------------------------------------
-    # Formwork
+    # Formwork construction navigation
     # ------------------------------------------------------------------------
 
-    if (
-        M
-        and
-        M.get("mode") == "formwork"
-    ):
+    if M and M.get("mode") == "formwork":
 
-        st.subheader(
-            "🏗️ Formwork Construction Types"
-        )
-
-        for i, sheet_name in enumerate(
-            M.get(
-                "formwork_sheets",
-                []
-            )
-        ):
-
+        st.subheader("🏗️ Formwork Construction Types")
+        for i, sheet_name in enumerate(M.get("formwork_sheets", [])):
             st.button(
                 sheet_name,
                 key=f"sidebar_formwork_{i}",
@@ -5095,7 +4326,7 @@ with st.sidebar:
 
 
 # ============================================================================
-# 25) MAIN APPLICATION ROUTER
+# 24) MAIN APPLICATION ROUTER
 # ============================================================================
 
 try:
@@ -5119,33 +4350,15 @@ try:
         page_sheet()
 
     # Formwork workbook
-    elif (
-        M
-        and
-        M.get("mode") == "formwork"
-    ):
+    elif M and M.get("mode") == "formwork":
 
-        if (
-            ss.page == "sheet"
-            and
-            ss.sheet in M.get(
-                "formwork_sheets",
-                []
-            )
-        ):
-
+        if ss.page == "sheet" and ss.sheet in M.get("formwork_sheets", []):
             page_sheet()
-
         else:
-
             page_home()
 
     # Project model
-    elif (
-        M
-        and
-        M.get("ok")
-    ):
+    elif M and M.get("ok"):
 
         if (
             ss.page == "projects"
@@ -5155,18 +4368,15 @@ try:
 
         elif (
             ss.page == "project"
-            and
-            ss.project
+            and ss.project
         ):
 
             page_project()
 
         elif (
             ss.page == "pipeline"
-            and
-            ss.pipeline
-            and
-            ss.pipeline in set(
+            and ss.pipeline
+            and ss.pipeline in set(
                 M["F"]["_pk"]
             )
         ):
@@ -5185,8 +4395,7 @@ try:
 except Exception as error:
 
     st.error(
-        f"Something went wrong while building "
-        f"this page: {error}"
+        f"Something went wrong while building this page: {error}"
     )
 
     st.button(
@@ -5194,4 +4403,4 @@ except Exception as error:
         on_click=go,
         args=("home",),
         width="stretch"
-    )
+    ) عايز الكود بعد التعديل
