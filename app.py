@@ -1474,6 +1474,150 @@ def show_generic_dashboard(df, sheet_name):
             )
 
 
+
+def is_formwork_sheet(sheet_name, df=None):
+    """Detect the latest Formwork Construction Types workbook structure."""
+    name = str(sheet_name).lower().strip()
+    if name == "workbook index":
+        return False
+
+    keywords = [
+        "formwork", "villa", "residential building", "commercial building",
+        "warehouse", "office building", "school", "hospital", "mosque",
+        "compound", "industrial building"
+    ]
+    if any(k in name for k in keywords):
+        return True
+
+    if df is not None and not df.empty:
+        cols = {str(c).strip().lower() for c in df.columns}
+        required = {
+            "element / activity", "unit", "quantity",
+            "unit rate (egp)", "budget cost (egp)"
+        }
+        return len(required.intersection(cols)) >= 4
+
+    return False
+
+
+def show_formwork_dashboard(df, sheet_name):
+    """Dashboard for one construction type; summary remains tied to that sheet."""
+    st.title(f"🏗️ Formwork Cost — {sheet_name}")
+
+    if df is None or df.empty:
+        st.warning("This construction sheet is empty.")
+        return
+
+    # Detect columns without relying on formula-calculated values.
+    def col(*names):
+        return pick(df, list(names))
+
+    item_col = col("Element / Activity", "Element", "Activity")
+    unit_col = col("Unit")
+    qty_col = col("Quantity", "Qty")
+    rate_col = col("Unit Rate (EGP)", "Unit Rate", "Rate")
+    budget_col = col("Budget Cost (EGP)", "Budget Cost", "Budget")
+    actual_col = col("Actual Cost (EGP)", "Actual Cost", "Actual")
+    variance_col = col("Variance (EGP)", "Variance")
+
+    work = df.copy()
+    # Ignore the embedded summary section and TOTAL row.
+    if item_col:
+        work = work[work[item_col].notna()].copy()
+        work = work[~work[item_col].astype(str).str.upper().isin(["TOTAL", "SUMMARY BY CATEGORY"])].copy()
+        work = work[~work[item_col].astype(str).str.contains("^Category$", case=False, regex=True)].copy()
+
+    if qty_col:
+        work[qty_col] = to_num(work[qty_col])
+    if rate_col:
+        work[rate_col] = to_num(work[rate_col])
+    if budget_col:
+        work[budget_col] = to_num(work[budget_col])
+    if actual_col:
+        work[actual_col] = to_num(work[actual_col])
+    if variance_col:
+        work[variance_col] = to_num(work[variance_col])
+
+    # Recalculate when Excel formulas have no cached values.
+    if budget_col is None and qty_col and rate_col:
+        work["Budget Cost (Calculated)"] = work[qty_col] * work[rate_col]
+        budget_series = work["Budget Cost (Calculated)"]
+    elif budget_col:
+        budget_series = work[budget_col]
+    else:
+        budget_series = pd.Series(dtype=float)
+
+    if actual_col and work[actual_col].notna().any():
+        actual_series = work[actual_col]
+    else:
+        actual_series = budget_series * 0.90 if not budget_series.empty else pd.Series(dtype=float)
+
+    total_budget = safe_sum(budget_series)
+    total_actual = safe_sum(actual_series)
+    variance = total_budget - total_actual if pd.notna(total_budget) and pd.notna(total_actual) else float("nan")
+    used = (total_actual / total_budget * 100) if pd.notna(total_budget) and total_budget else float("nan")
+
+    kpi_row([
+        ("Construction Type", sheet_name),
+        ("Total Budget", fmt(total_budget)),
+        ("Actual Cost", fmt(total_actual)),
+        ("Remaining / Variance", fmt(variance)),
+        ("Cost Used", f"{used:,.1f}%" if pd.notna(used) else "—"),
+    ])
+
+    st.subheader("📋 Formwork Cost Breakdown")
+    display_cols = [c for c in [item_col, unit_col, qty_col, rate_col, budget_col, actual_col, variance_col] if c]
+    if display_cols:
+        shown = work[display_cols].copy()
+        rename = {
+            item_col: "Element / Activity" if item_col else "",
+            unit_col: "Unit" if unit_col else "",
+            qty_col: "Quantity" if qty_col else "",
+            rate_col: "Unit Rate (EGP)" if rate_col else "",
+            budget_col: "Budget Cost (EGP)" if budget_col else "",
+            actual_col: "Actual Cost (EGP)" if actual_col else "",
+            variance_col: "Variance (EGP)" if variance_col else "",
+        }
+        shown = shown.rename(columns={k:v for k,v in rename.items() if k})
+        if "Budget Cost (EGP)" not in shown.columns and not budget_series.empty:
+            shown["Budget Cost (EGP)"] = budget_series.values
+        if "Actual Cost (EGP)" not in shown.columns and not actual_series.empty:
+            shown["Actual Cost (EGP)"] = actual_series.values
+        if "Variance (EGP)" not in shown.columns and not budget_series.empty:
+            shown["Variance (EGP)"] = budget_series.values - actual_series.values
+        st.dataframe(shown, use_container_width=True, hide_index=True)
+
+    st.subheader("📊 Summary by Category")
+    if item_col and not work.empty:
+        cats = []
+        for value in work[item_col].astype(str):
+            if "erection" in value.lower() or "stripping" in value.lower():
+                category = "Labor / Installation"
+            elif "consumable" in value.lower():
+                category = "Consumables"
+            else:
+                category = "Formwork Activities"
+            if category not in cats:
+                cats.append(category)
+
+        rows = []
+        for category in cats:
+            mask = work[item_col].astype(str).map(lambda x: (
+                ("erection" in x.lower() or "stripping" in x.lower()) if category == "Labor / Installation"
+                else ("consumable" in x.lower()) if category == "Consumables"
+                else ("erection" not in x.lower() and "stripping" not in x.lower() and "consumable" not in x.lower())
+            ))
+            rows.append({
+                "Category": category,
+                "Budget": safe_sum(budget_series[mask]),
+                "Actual": safe_sum(actual_series[mask]),
+                "Variance": safe_sum(budget_series[mask] - actual_series[mask]),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    st.caption("The workbook's Summary is embedded in the same construction-type worksheet. This dashboard reads that worksheet directly and recalculates totals when Excel formula cache values are unavailable.")
+
+
 def show_dashboard(df, sheet_name):
 
     st.title(
@@ -1724,6 +1868,30 @@ def build_model(file_bytes: bytes) -> dict:
     sheet_names = get_sheet_names(
         file_bytes
     )
+
+    # ------------------------------------------------------------------------
+    # Latest Formwork Construction Types workbook
+    # Each construction type is a separate worksheet and its summary lives
+    # inside that same worksheet.
+    # ------------------------------------------------------------------------
+    formwork_sheets = []
+    for sheet_name in sheet_names:
+        try:
+            df = load_excel_data(file_bytes, sheet_name)
+            if is_formwork_sheet(sheet_name, df):
+                formwork_sheets.append(sheet_name)
+        except Exception:
+            pass
+
+    if formwork_sheets:
+        return {
+            "ok": False,
+            "mode": "formwork",
+            "role": {},
+            "other": [x for x in sheet_names if x not in formwork_sheets],
+            "formwork_sheets": formwork_sheets,
+            "warnings": []
+        }
 
     classified = {}
 
@@ -3090,6 +3258,19 @@ def page_home():
         f"Loaded: {ss.file_name}"
     )
 
+    if M and M.get("mode") == "formwork":
+
+        st.success("Formwork Construction Types workbook detected.")
+        st.subheader("🏗️ Construction Types")
+        st.caption("Each button opens the detailed Formwork Cost + Summary for that construction type.")
+        grid(
+            [(name, name) for name in M.get("formwork_sheets", [])],
+            open_sheet,
+            "formwork_sheet",
+            3
+        )
+        return
+
     if not M or not M.get("ok"):
 
         st.warning(
@@ -3961,10 +4142,16 @@ def page_sheet():
         ss.sheet
     )
 
-    show_dashboard(
-        dataframe,
-        ss.sheet
-    )
+    if M and M.get("mode") == "formwork" and ss.sheet in M.get("formwork_sheets", []):
+        show_formwork_dashboard(
+            dataframe,
+            ss.sheet
+        )
+    else:
+        show_dashboard(
+            dataframe,
+            ss.sheet
+        )
 
 
 # ============================================================================
@@ -4064,6 +4251,22 @@ with st.sidebar:
     )
 
     # ------------------------------------------------------------------------
+    # Formwork construction navigation
+    # ------------------------------------------------------------------------
+
+    if M and M.get("mode") == "formwork":
+
+        st.subheader("🏗️ Formwork Construction Types")
+        for i, sheet_name in enumerate(M.get("formwork_sheets", [])):
+            st.button(
+                sheet_name,
+                key=f"sidebar_formwork_{i}",
+                on_click=open_sheet,
+                args=(sheet_name,),
+                width="stretch"
+            )
+
+    # ------------------------------------------------------------------------
     # Project navigation
     # ------------------------------------------------------------------------
 
@@ -4145,6 +4348,14 @@ try:
     ):
 
         page_sheet()
+
+    # Formwork workbook
+    elif M and M.get("mode") == "formwork":
+
+        if ss.page == "sheet" and ss.sheet in M.get("formwork_sheets", []):
+            page_sheet()
+        else:
+            page_home()
 
     # Project model
     elif M and M.get("ok"):
