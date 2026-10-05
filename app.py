@@ -1,4 +1,3 @@
-اوكي خد الكود ده 
 """
 Hassan Allam Construction
 Construction Projects & Pipeline Dashboard
