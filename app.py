@@ -2674,26 +2674,6 @@ def build_model(file_bytes: bytes) -> dict:
     # RETURN MODEL
     # =========================================================================
 
-    # ============================================================================
-    # NORMALIZE FINANCIAL MODEL COLUMNS
-    # ============================================================================
-    # Keep a stable internal schema even when optional financial columns are
-    # missing from the uploaded Excel workbook. This prevents KeyError failures
-    # such as KeyError: "Actual".
-    required_financial_columns = {
-        "Budget": "float",
-        "Planned": "float",
-        "Actual": "float",
-        "Remaining": "float",
-        "Variance": "float",
-        "Progress": "float",
-        "State": "object",
-    }
-
-    for _column, _dtype in required_financial_columns.items():
-        if _column not in F.columns:
-            F[_column] = pd.Series(index=F.index, dtype=_dtype)
-
     role = {}
 
     if project_sheet:
@@ -3259,30 +3239,71 @@ def page_projects():
 
 def page_project():
 
-    project_key = ss.project
+    # ------------------------------------------------------------------------
+    # Safe project lookup
+    # ------------------------------------------------------------------------
+    project_key = normalize_text(ss.project)
 
-    P = M["P"]
-    F = M["F"]
+    P = M.get("P", pd.DataFrame())
+    F = M.get("F", pd.DataFrame())
 
-    project_rows = P[
-        P["_key"] == project_key
-    ]
-
-    if project_rows.empty:
-
-        st.error(
-            "Project was not found."
-        )
-
+    if P is None or P.empty:
+        st.error("No project data is available.")
         return
 
-    project_row = (
-        project_rows.iloc[0]
-    )
+    # Make sure the internal project key always exists.
+    if "_key" not in P.columns:
+        project_id_col = pick(P, PROJECT_COLS["id"])
+        project_name_col = pick(P, PROJECT_COLS["name"])
 
-    pipeline_rows = F[
-        F["_key"] == project_key
+        source_col = project_id_col or project_name_col
+
+        if not source_col:
+            st.error("Project ID / Project Name column was not found.")
+            return
+
+        P = P.copy()
+        P["_key"] = P[source_col].map(normalize_text)
+
+    # Find the project by internal key first.
+    project_rows = P[
+        P["_key"].astype(str).map(normalize_text) == project_key
     ].copy()
+
+    # Fallback: the selected value may be the project name.
+    if project_rows.empty and "_name" in P.columns:
+        project_rows = P[
+            P["_name"].astype(str).map(normalize_key)
+            == normalize_key(project_key)
+        ].copy()
+
+    if project_rows.empty:
+        st.error(
+            f"Project '{project_key}' was not found."
+        )
+        st.button(
+            "⬅ Back to Projects",
+            on_click=go,
+            args=("projects",),
+            width="stretch"
+        )
+        return
+
+    project_row = project_rows.iloc[0]
+
+    # Pipelines are optional. Never access F["_key"] unless the column exists.
+    if F is None or F.empty:
+        pipeline_rows = pd.DataFrame()
+    elif "_key" in F.columns:
+        pipeline_rows = F[
+            F["_key"].astype(str).map(normalize_text) == project_key
+        ].copy()
+    elif "_project_key" in F.columns:
+        pipeline_rows = F[
+            F["_project_key"].astype(str).map(normalize_text) == project_key
+        ].copy()
+    else:
+        pipeline_rows = pd.DataFrame()
 
     project_name = (
         project_row["_name"]
@@ -3521,14 +3542,26 @@ def page_pipeline():
 
         raw = raw_rows.iloc[0]
 
-    project_name = (
-        M["P"]
-        .set_index("_key")["_name"]
-        .get(
-            pipeline["_key"],
-            pipeline["_key"]
-        )
-    )
+    # Resolve project name safely without assuming _key exists in the raw table.
+    project_name = pipeline.get("_key", "")
+
+    P = M.get("P", pd.DataFrame())
+    if P is not None and not P.empty:
+        if "_key" not in P.columns:
+            project_id_col = pick(P, PROJECT_COLS["id"])
+            project_name_col = pick(P, PROJECT_COLS["name"])
+            source_col = project_id_col or project_name_col
+            if source_col:
+                P = P.copy()
+                P["_key"] = P[source_col].map(normalize_text)
+
+        if "_key" in P.columns and "_name" in P.columns:
+            matches = P[
+                P["_key"].astype(str).map(normalize_text)
+                == normalize_text(pipeline.get("_key", ""))
+            ]
+            if not matches.empty:
+                project_name = matches.iloc[0]["_name"]
 
     # ------------------------------------------------------------------------
     # Header
@@ -3577,11 +3610,11 @@ def page_pipeline():
         {
             "Budget": pipeline["Budget"],
             "Planned Cost": pipeline["Planned"],
-            "Actual Cost": pipeline.get("Actual", float("nan")),
-            "Remaining Cost": pipeline.get("Remaining", float("nan")),
-            "Cost Variance (Planned − Actual)": pipeline.get("Variance", float("nan")),
-            "Progress %": pipeline.get("Progress", float("nan")),
-            "Status": pipeline.get("State", "Unknown")
+            "Actual Cost": pipeline["Actual"],
+            "Remaining Cost": pipeline["Remaining"],
+            "Cost Variance (Planned − Actual)": pipeline["Variance"],
+            "Progress %": pipeline["Progress"],
+            "Status": pipeline["State"]
         }
     )
 
@@ -3589,10 +3622,9 @@ def page_pipeline():
     # Progress bar
     # ------------------------------------------------------------------------
 
-    progress = pipeline.get(
-        "Progress",
-        float("nan")
-    )
+    progress = pipeline[
+        "Progress"
+    ]
 
     if pd.notna(progress):
 
@@ -3618,9 +3650,9 @@ def page_pipeline():
 
     if (
         pd.notna(
-            pipeline.get("Variance", float("nan"))
+            pipeline["Variance"]
         )
-        and pipeline.get("Variance", float("nan")) < 0
+        and pipeline["Variance"] < 0
     ):
 
         st.error(
@@ -3629,9 +3661,9 @@ def page_pipeline():
 
     elif (
         pd.notna(
-            pipeline.get("Variance", float("nan"))
+            pipeline["Variance"]
         )
-        and pipeline.get("Variance", float("nan")) > 0
+        and pipeline["Variance"] > 0
     ):
 
         st.success(
