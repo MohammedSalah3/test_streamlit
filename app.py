@@ -354,11 +354,12 @@ st.markdown(
 <style>
 
 .stApp {{
-    background-color: #ffffff;
+    background-color: #E7E1D7;
     background-image:
-        linear-gradient(rgba(31,41,51,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(31,41,51,.035) 1px, transparent 1px);
-    background-size: 32px 32px;
+        linear-gradient(rgba(92,78,62,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92,78,62,.045) 1px, transparent 1px),
+        radial-gradient(circle at 15% 10%, rgba(200,16,46,.055), transparent 28%);
+    background-size: 32px 32px, 32px 32px, 100% 100%;
 }}
 
 [data-testid="stSidebar"] {{
@@ -2669,6 +2670,62 @@ def build_model(file_bytes: bytes) -> dict:
                 end_dates
             )
         ]
+
+    # =========================================================================
+    # FINAL FINANCIAL MODEL SAFETY
+    # =========================================================================
+    # Always expose the canonical financial columns used by every page.
+    # This prevents KeyError when an Excel file has a different/missing
+    # Actual Cost column or when a sheet is partially populated.
+    required_financial_columns = {
+        "Budget": float("nan"),
+        "Planned": float("nan"),
+        "Actual": float("nan"),
+        "Remaining": float("nan"),
+        "Variance": float("nan"),
+        "Progress": float("nan"),
+        "State": "Unknown",
+    }
+
+    if F is None or not isinstance(F, pd.DataFrame):
+        F = pd.DataFrame()
+
+    for col, default in required_financial_columns.items():
+        if col not in F.columns:
+            F[col] = default
+
+    # Make sure numeric financial columns are always numeric.
+    for col in [
+        "Budget", "Planned", "Actual", "Remaining",
+        "Variance", "Progress"
+    ]:
+        F[col] = pd.to_numeric(F[col], errors="coerce")
+
+    # Recalculate derived values safely.
+    if not F.empty:
+        missing_remaining = F["Remaining"].isna()
+        F.loc[missing_remaining, "Remaining"] = (
+            F.loc[missing_remaining, "Budget"]
+            - F.loc[missing_remaining, "Actual"]
+        )
+
+        missing_variance = F["Variance"].isna()
+        F.loc[missing_variance, "Variance"] = (
+            F.loc[missing_variance, "Planned"]
+            - F.loc[missing_variance, "Actual"]
+        )
+
+        missing_progress = F["Progress"].isna()
+        valid_progress = (
+            F["Budget"].notna()
+            & (F["Budget"] > 0)
+            & F["Actual"].notna()
+        )
+        F.loc[missing_progress & valid_progress, "Progress"] = (
+            F.loc[missing_progress & valid_progress, "Actual"]
+            / F.loc[missing_progress & valid_progress, "Budget"]
+            * 100
+        )
 
     # =========================================================================
     # RETURN MODEL
