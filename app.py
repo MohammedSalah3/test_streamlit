@@ -2674,6 +2674,26 @@ def build_model(file_bytes: bytes) -> dict:
     # RETURN MODEL
     # =========================================================================
 
+    # ============================================================================
+    # NORMALIZE FINANCIAL MODEL COLUMNS
+    # ============================================================================
+    # Keep a stable internal schema even when optional financial columns are
+    # missing from the uploaded Excel workbook. This prevents KeyError failures
+    # such as KeyError: "Actual".
+    required_financial_columns = {
+        "Budget": "float",
+        "Planned": "float",
+        "Actual": "float",
+        "Remaining": "float",
+        "Variance": "float",
+        "Progress": "float",
+        "State": "object",
+    }
+
+    for _column, _dtype in required_financial_columns.items():
+        if _column not in F.columns:
+            F[_column] = pd.Series(index=F.index, dtype=_dtype)
+
     role = {}
 
     if project_sheet:
@@ -3557,11 +3577,11 @@ def page_pipeline():
         {
             "Budget": pipeline["Budget"],
             "Planned Cost": pipeline["Planned"],
-            "Actual Cost": pipeline["Actual"],
-            "Remaining Cost": pipeline["Remaining"],
-            "Cost Variance (Planned − Actual)": pipeline["Variance"],
-            "Progress %": pipeline["Progress"],
-            "Status": pipeline["State"]
+            "Actual Cost": pipeline.get("Actual", float("nan")),
+            "Remaining Cost": pipeline.get("Remaining", float("nan")),
+            "Cost Variance (Planned − Actual)": pipeline.get("Variance", float("nan")),
+            "Progress %": pipeline.get("Progress", float("nan")),
+            "Status": pipeline.get("State", "Unknown")
         }
     )
 
@@ -3569,9 +3589,10 @@ def page_pipeline():
     # Progress bar
     # ------------------------------------------------------------------------
 
-    progress = pipeline[
-        "Progress"
-    ]
+    progress = pipeline.get(
+        "Progress",
+        float("nan")
+    )
 
     if pd.notna(progress):
 
@@ -3597,9 +3618,9 @@ def page_pipeline():
 
     if (
         pd.notna(
-            pipeline["Variance"]
+            pipeline.get("Variance", float("nan"))
         )
-        and pipeline["Variance"] < 0
+        and pipeline.get("Variance", float("nan")) < 0
     ):
 
         st.error(
@@ -3608,9 +3629,9 @@ def page_pipeline():
 
     elif (
         pd.notna(
-            pipeline["Variance"]
+            pipeline.get("Variance", float("nan"))
         )
-        and pipeline["Variance"] > 0
+        and pipeline.get("Variance", float("nan")) > 0
     ):
 
         st.success(
