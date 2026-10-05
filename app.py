@@ -2,13 +2,14 @@
 Construction Projects Dashboard  (Streamlit MVP - single file)
 Excel -> Pandas -> Dynamic sheet buttons -> Reusable dashboard
 """
+import os
 from io import BytesIO
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-st.set_page_config(page_title="Construction Projects Dashboard", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Hassan Allam Construction | Projects Dashboard", page_icon="🏗️", layout="wide")
 
 # ----------------------------------------------------------------------------
 # 1) CONFIGURATION  -> غيّر أسماء الأعمدة من هنا فقط
@@ -26,27 +27,47 @@ COLUMN_MAP = {
     "actual_date":   ["Actual Date", "Delivery Date"],
     "status":        ["Status"],
 }
-PRIMARY = "#1f4e9c"
-STATUS_COLORS = {"Delivered": "#2e9e5b", "Pending / On Track": "#1f6fd1",
-                 "Delayed": "#d9534f", "Unknown": "#9aa5b1"}
+# ---- BRAND THEME: غيّر الألوان من هنا فقط ----
+COMPANY = "Hassan Allam Construction"
+PRIMARY = "#C8102E"     # لون رئيسي (أحمر)
+DARK = "#1F2933"        # فحمي للعناوين والخلفيات الداكنة
+LIGHT = "#F4F5F7"       # رمادي فاتح للكروت
+LOGO_PATH = "assets/logo.png"   # ضع الشعار الرسمي هنا (اختياري)
+STATUS_COLORS = {"Delivered": "#2e9e5b", "Pending / On Track": "#1F2933",
+                 "Delayed": "#C8102E", "Unknown": "#9aa5b1"}
 
 # ----------------------------------------------------------------------------
 # 2) STYLE
 # ----------------------------------------------------------------------------
 st.markdown(f"""
 <style>
-.stApp {{ background:#ffffff; }}
-h1,h2,h3 {{ color:{PRIMARY}; }}
-.kpi {{ background:#f4f8ff; border:1px solid #d6e4fb; border-left:5px solid {PRIMARY};
-        border-radius:12px; padding:14px 16px; margin-bottom:10px; }}
-.kpi .l {{ font-size:13px; color:#5b6b82; }}
-.kpi .v {{ font-size:26px; font-weight:700; color:{PRIMARY}; }}
-div.stButton > button {{ border-radius:10px; border:1px solid {PRIMARY}; color:{PRIMARY};
+/* خلفية بنمط شبكة هندسية خفيفة (blueprint) */
+.stApp {{ background-color:#ffffff;
+  background-image: linear-gradient(rgba(31,41,51,.045) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(31,41,51,.045) 1px, transparent 1px);
+  background-size: 32px 32px; }}
+[data-testid="stSidebar"] {{ background:{LIGHT}; border-top:5px solid {PRIMARY}; }}
+h1,h2,h3 {{ color:{DARK}; }}
+h2, h3 {{ border-left:5px solid {PRIMARY}; padding-left:10px; }}
+.kpi {{ background:#ffffff; border:1px solid #e1e4e8; border-top:4px solid {PRIMARY};
+        border-radius:10px; padding:14px 16px; margin-bottom:10px;
+        box-shadow:0 2px 6px rgba(31,41,51,.07); }}
+.kpi .l {{ font-size:13px; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; }}
+.kpi .v {{ font-size:27px; font-weight:700; color:{DARK}; }}
+div.stButton > button {{ border-radius:8px; border:1.5px solid {DARK}; color:{DARK};
         background:#fff; font-weight:600; width:100%; padding:.6rem 0; }}
 div.stButton > button:hover {{ background:{PRIMARY}; color:#fff; border-color:{PRIMARY}; }}
-.hero {{ background:linear-gradient(120deg,#1f4e9c,#3b82d6); color:#fff; padding:34px;
-        border-radius:16px; margin-bottom:22px; }}
-.hero h1 {{ color:#fff; margin:0; }} .hero p {{ margin:6px 0 0; opacity:.9; font-size:18px; }}
+.hero {{ background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 14px, transparent 14px 28px),
+    linear-gradient(120deg,{DARK},#3a4552);
+  color:#fff; padding:38px 34px; border-radius:6px 6px 6px 6px;
+  border-bottom:6px solid {PRIMARY}; margin-bottom:22px; }}
+.hero .co {{ color:{PRIMARY}; font-weight:700; letter-spacing:2px; font-size:14px;
+  text-transform:uppercase; background:#fff; display:inline-block; padding:2px 10px; border-radius:3px; }}
+.hero h1 {{ color:#fff; margin:12px 0 0; }}
+.hero p {{ margin:6px 0 0; opacity:.9; font-size:18px; }}
+.topbar {{ border-bottom:3px solid {PRIMARY}; padding:4px 0 6px; margin-bottom:10px;
+  color:{DARK}; font-weight:700; letter-spacing:1px; font-size:13px; text-transform:uppercase; }}
 </style>""", unsafe_allow_html=True)
 
 
@@ -211,7 +232,7 @@ def show_delivery_dashboard(df, sheet_name):
         tot = pd.DataFrame({"Type": ["Delivered", "Remaining"],
                             "Qty": [df[c["delivered_qty"]].sum(), df[rem_col].sum()]})
         g3.plotly_chart(px.bar(tot, x="Type", y="Qty", color="Type", title="Delivered vs Remaining Quantity",
-                               color_discrete_sequence=["#2e9e5b", "#d9534f"]), width="stretch")
+                               color_discrete_sequence=["#2e9e5b", "#C8102E"]), width="stretch")
     if c["project"]:
         bp = df.groupby(c["project"]).size().reset_index(name="Deliveries")
         g4.plotly_chart(px.bar(bp, x=c["project"], y="Deliveries", title="Deliveries by Project",
@@ -303,6 +324,10 @@ def open_named(wanted):
 
 
 with st.sidebar:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=150)
+    else:
+        st.markdown(f"**{COMPANY}**")
     st.header("🏗️ Navigation")
     up = st.file_uploader("Upload Excel File", type=["xlsx"])
     if up is not None and (up.name != ss.file_name or up.size != len(ss.file_bytes or b"")):
@@ -323,7 +348,10 @@ with st.sidebar:
 # ----------------------------------------------------------------------------
 try:
     if ss.page == "home" or not ss.file_bytes:
-        st.markdown('<div class="hero"><h1>Construction Projects Dashboard</h1>'
+        if os.path.exists(LOGO_PATH):
+            st.image(LOGO_PATH, width=180)
+        st.markdown(f'<div class="hero"><span class="co">{COMPANY}</span>'
+                    '<h1>Construction Projects Dashboard</h1>'
                     '<p>Monitor projects, deliveries, materials and construction activities.</p></div>',
                     unsafe_allow_html=True)
         if not ss.file_bytes:
@@ -343,7 +371,7 @@ try:
                 for j, name in enumerate(names[i:i + per_row]):
                     cols[j].button(name, key=f"sheet_btn_{i + j}", on_click=open_sheet, args=(name,))
     else:
-        st.caption(f"📂 {ss.file_name}")
+        st.markdown(f'<div class="topbar">{COMPANY} &nbsp;|&nbsp; {ss.file_name}</div>', unsafe_allow_html=True)
         df = load_excel_data(ss.file_bytes, ss.sheet)
         show_dashboard(df, ss.sheet)
 except Exception as e:  # ملف تالف أو شيت غير صالح
