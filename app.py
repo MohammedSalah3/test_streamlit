@@ -65,6 +65,17 @@ st.markdown(
 )
 
 
+# Dark mode: inverts the light theme (works for tables and charts too).
+# Requires the base theme to be "light" (see .streamlit/config.toml).
+DARK_CSS = """
+<style>
+    .stApp {
+        filter: invert(0.9) hue-rotate(180deg);
+    }
+</style>
+"""
+
+
 # =========================================================
 # SMALL HELPERS
 # =========================================================
@@ -1016,6 +1027,8 @@ if not excel_files:
 project_files = {f.stem: f for f in excel_files}
 
 with st.sidebar:
+    st.toggle("🌙 Dark mode", key="dark_mode")
+
     st.header("📁 Projects")
 
     selected_project = st.selectbox("Select Project", list(project_files))
@@ -1030,6 +1043,10 @@ with st.sidebar:
 
     for f in excel_files:
         st.caption(f"📄 {f.name}")
+
+
+if st.session_state.get("dark_mode"):
+    st.markdown(DARK_CSS, unsafe_allow_html=True)
 
 
 # =========================================================
