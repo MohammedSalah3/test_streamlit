@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v9 - hint removed"
+APP_VERSION = "v10 - PR & PO Sheets title"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1152,7 +1152,7 @@ if st.session_state.get("selected_sheet") not in nav_items:
 # SHEET BUTTONS
 # =========================================================
 
-st.subheader("📑 Project Sheets")
+st.subheader("📑 PR & PO Sheets")
 
 BUTTONS_PER_ROW = 4
 
