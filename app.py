@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v5 - dark mode + sidebar expanded"
+APP_VERSION = "v6 - file switcher + shareable links"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1027,13 +1027,24 @@ if not excel_files:
 # =========================================================
 
 project_files = {f.stem: f for f in excel_files}
+project_names = list(project_files)
+
+# A shared link like  ?project=<file name>&sheet=<sheet name>
+# opens directly on that file / sheet.
+query_project = st.query_params.get("project")
+start_index = (
+    project_names.index(query_project) if query_project in project_names else 0
+)
+
+selected_project = st.selectbox(
+    "📁 Select file / project",
+    project_names,
+    index=start_index,
+    key="project_select",
+)
 
 with st.sidebar:
     st.toggle("🌙 Dark mode", key="dark_mode")
-
-    st.header("📁 Projects")
-
-    selected_project = st.selectbox("Select Project", list(project_files))
 
     st.divider()
 
@@ -1086,8 +1097,10 @@ st.info(
 
 
 st.caption(
-    "👈 Use the sidebar to switch between project files "
-    "and to show / hide empty PR templates."
+    "🔗 To share a specific file or sheet, copy the page address from "
+    "your browser – it opens on the same selection.  "
+    "👈 The sidebar has the dark mode and the "
+    "show / hide empty PR templates options."
 )
 
 
@@ -1097,9 +1110,16 @@ st.caption(
 
 nav_items = [OVERVIEW] + visible_sheets
 
+first_load = "project" not in st.session_state
+
 if st.session_state.get("project") != selected_project:
     st.session_state.project = selected_project
-    st.session_state.selected_sheet = OVERVIEW
+
+    query_sheet = st.query_params.get("sheet")
+
+    st.session_state.selected_sheet = (
+        query_sheet if (first_load and query_sheet in nav_items) else OVERVIEW
+    )
 
 if st.session_state.get("selected_sheet") not in nav_items:
     st.session_state.selected_sheet = OVERVIEW
@@ -1142,6 +1162,16 @@ for start in range(0, len(nav_items), BUTTONS_PER_ROW):
 # =========================================================
 
 selected_sheet = st.session_state.selected_sheet
+
+# keep the page address in sync so the link can be shared as-is
+st.query_params["project"] = selected_project
+
+if selected_sheet == OVERVIEW:
+    if "sheet" in st.query_params:
+        del st.query_params["sheet"]
+else:
+    st.query_params["sheet"] = selected_sheet
+
 
 st.divider()
 
