@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v6 - file switcher + shareable links"
+APP_VERSION = "v7 - sidebar menu"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1036,27 +1036,55 @@ start_index = (
     project_names.index(query_project) if query_project in project_names else 0
 )
 
-selected_project = st.selectbox(
-    "📁 Select file / project",
-    project_names,
-    index=start_index,
-    key="project_select",
-)
-
 with st.sidebar:
+    st.markdown("## 🏗️ Menu")
+
+    # ---------------- files ----------------
+    st.markdown(f"##### 📁 Files  ·  {len(project_names)}")
+
+    file_query = st.text_input(
+        "🔎 Search files",
+        key="file_search",
+        placeholder="Type part of a file name...",
+    )
+
+    matching = [
+        n for n in project_names if file_query.strip().lower() in n.lower()
+    ]
+
+    if not matching:
+        st.warning("No file matches your search.")
+        matching = project_names
+
+    if file_query.strip():
+        st.caption(f"Showing {len(matching)} of {len(project_names)} files")
+
+    selected_project = st.selectbox(
+        "Select file",
+        matching,
+        index=matching.index(project_names[start_index])
+        if project_names[start_index] in matching
+        else 0,
+        key="project_select",
+    )
+
+    with st.expander(f"📄 All files ({len(project_names)})"):
+        for f in excel_files:
+            st.caption(f.name)
+
+    st.divider()
+
+    # ---------------- options ----------------
+    st.markdown("##### ⚙️ Options")
+
+    hide_empty = st.toggle(
+        "Hide empty PR templates", value=True, key="hide_empty"
+    )
+
     st.toggle("🌙 Dark mode", key="dark_mode")
 
     st.divider()
-
-    hide_empty = st.checkbox("Hide empty PR templates", value=True)
-
-    st.divider()
     st.caption(f"App version: {APP_VERSION}")
-    st.write("Excel files found:")
-    st.write(f"**{len(excel_files)}**")
-
-    for f in excel_files:
-        st.caption(f"📄 {f.name}")
 
 
 if st.session_state.get("dark_mode"):
@@ -1098,9 +1126,7 @@ st.info(
 
 st.caption(
     "🔗 To share a specific file or sheet, copy the page address from "
-    "your browser – it opens on the same selection.  "
-    "👈 The sidebar has the dark mode and the "
-    "show / hide empty PR templates options."
+    "your browser – it opens on the same selection."
 )
 
 
