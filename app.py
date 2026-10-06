@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v7 - sidebar menu"
+APP_VERSION = "v8 - menu always reachable"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -48,8 +48,9 @@ st.markdown(
         .project-title { font-size: 30px; font-weight: 700; }
         .project-subtitle { color: #6b7280; margin-bottom: 20px; }
 
-        /* Hide GitHub icon, Deploy button, main menu and footer */
-        [data-testid="stToolbar"],
+        /* Hide GitHub icon, Deploy button, main menu and footer.
+           NOTE: stToolbar itself must stay visible - it holds the
+           button that re-opens the sidebar menu. */
         [data-testid="stToolbarActions"],
         [data-testid="stAppDeployButton"],
         [data-testid="stMainMenu"],
@@ -1125,8 +1126,10 @@ st.info(
 
 
 st.caption(
+    "☰ Menu (files, search, options, dark mode): use the sidebar on the left "
+    "– if it is closed, open it with the arrow at the top-left.  "
     "🔗 To share a specific file or sheet, copy the page address from "
-    "your browser – it opens on the same selection."
+    "your browser."
 )
 
 
