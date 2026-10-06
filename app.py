@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v8 - menu always reachable"
+APP_VERSION = "v9 - hint removed"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1125,12 +1125,6 @@ st.info(
 )
 
 
-st.caption(
-    "☰ Menu (files, search, options, dark mode): use the sidebar on the left "
-    "– if it is closed, open it with the arrow at the top-left.  "
-    "🔗 To share a specific file or sheet, copy the page address from "
-    "your browser."
-)
 
 
 # =========================================================
