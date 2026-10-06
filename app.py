@@ -91,12 +91,6 @@ st.markdown(
         font-weight: 700;
     }}
 
-    .sheet-button {{
-        border: 1px solid {BORDER};
-        border-radius: 8px;
-        padding: 10px;
-    }}
-
     </style>
     """,
     unsafe_allow_html=True
@@ -115,17 +109,16 @@ if "selected_project" not in st.session_state:
 if "selected_sheet" not in st.session_state:
     st.session_state.selected_sheet = None
 
+
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
 
 def clean_column_name(column):
-
     if column is None:
         return ""
 
     column = str(column).strip()
-
     column = re.sub(r"\s+", " ", column)
 
     return column
@@ -299,7 +292,7 @@ def read_excel_sheet(
 
         return df
 
-    except Exception as e:
+    except Exception:
 
         return pd.DataFrame()
 
@@ -354,7 +347,7 @@ def find_pr_column(df):
         "Requisition No"
     ]
 
-    # Exact match
+    # Exact match first
     for candidate in exact_candidates:
 
         for col in columns:
@@ -369,7 +362,7 @@ def find_pr_column(df):
 
                 return col
 
-    # Regex / partial
+    # Additional matching
     for col in columns:
 
         col_text = (
@@ -398,51 +391,6 @@ def find_pr_column(df):
 
         if "requisition no" in col_text:
             return col
-
-    return None
-
-
-def find_numeric_column(
-    df,
-    candidates
-):
-
-    if df.empty:
-        return None
-
-    columns = list(df.columns)
-
-    for candidate in candidates:
-
-        for col in columns:
-
-            if (
-                str(col)
-                .strip()
-                .lower()
-                ==
-                candidate.lower()
-            ):
-
-                return col
-
-    for candidate in candidates:
-
-        candidate_lower = candidate.lower()
-
-        for col in columns:
-
-            col_lower = str(col).lower()
-
-            if candidate_lower in col_lower:
-
-                series = pd.to_numeric(
-                    df[col],
-                    errors="coerce"
-                )
-
-                if series.notna().sum() > 0:
-                    return col
 
     return None
 
@@ -504,6 +452,59 @@ def numeric_series(
     )
 
 
+def find_numeric_column(
+    df,
+    candidates
+):
+
+    if df.empty:
+        return None
+
+    columns = list(df.columns)
+
+    # Exact match
+    for candidate in candidates:
+
+        for col in columns:
+
+            if (
+                str(col)
+                .strip()
+                .lower()
+                ==
+                candidate.lower()
+            ):
+
+                test = numeric_series(
+                    df,
+                    col
+                )
+
+                if test.notna().sum() > 0:
+                    return col
+
+    # Partial match
+    for candidate in candidates:
+
+        candidate_lower = candidate.lower()
+
+        for col in columns:
+
+            col_lower = str(col).lower()
+
+            if candidate_lower in col_lower:
+
+                test = numeric_series(
+                    df,
+                    col
+                )
+
+                if test.notna().sum() > 0:
+                    return col
+
+    return None
+
+
 def format_number(value):
 
     try:
@@ -514,7 +515,6 @@ def format_number(value):
         value = float(value)
 
         if value.is_integer():
-
             return f"{int(value):,}"
 
         return f"{value:,.2f}"
@@ -546,6 +546,7 @@ def show_kpi(
     st.markdown(
         f"""
         <div class="kpi-card">
+
             <div class="kpi-title">
                 {title}
             </div>
@@ -553,15 +554,14 @@ def show_kpi(
             <div class="kpi-value">
                 {value}
             </div>
+
         </div>
         """,
         unsafe_allow_html=True
     )
 
 
-def clean_dataframe_for_display(
-    df
-):
+def clean_dataframe_for_display(df):
 
     result = df.copy()
 
@@ -610,15 +610,15 @@ def register_uploaded_files(
             )
 
             existing = (
-                st.session_state.projects
-                .get(project_name)
+                st.session_state.projects.get(
+                    project_name
+                )
             )
 
+            # Same file already loaded
             if (
                 existing
-                and existing.get(
-                    "hash"
-                )
+                and existing.get("hash")
                 == unique_hash
             ):
 
@@ -670,6 +670,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # =========================================================
 # SIDEBAR
 # =========================================================
@@ -705,10 +706,8 @@ with st.sidebar:
     if st.session_state.projects:
 
         st.markdown(
-            f"""
-            **Projects: 
-            {len(st.session_state.projects)}**
-            """
+            f"**Projects: "
+            f"{len(st.session_state.projects)}**"
         )
 
         for project_name in sorted(
@@ -722,9 +721,10 @@ with st.sidebar:
             )
 
             sheet_count = len(
-                project_info[
-                    "sheets"
-                ]
+                project_info.get(
+                    "sheets",
+                    {}
+                )
             )
 
             st.markdown(
@@ -751,6 +751,12 @@ with st.sidebar:
                 unsafe_allow_html=True
             )
 
+    else:
+
+        st.info(
+            "Upload Excel files."
+        )
+
     st.divider()
 
     if st.button(
@@ -773,13 +779,36 @@ with st.sidebar:
 
         st.rerun()
 
+
 # =========================================================
-# PROJECT FILTER
+# CHECK PROJECTS
 # =========================================================
 
 project_names = sorted(
     st.session_state.projects.keys()
 )
+
+if not project_names:
+
+    st.info(
+        "Please upload at least one Excel file."
+    )
+
+    st.stop()
+
+
+# =========================================================
+# SAFE PROJECT SELECTION
+# =========================================================
+
+if (
+    st.session_state.selected_project
+    not in project_names
+):
+
+    st.session_state.selected_project = (
+        project_names[0]
+    )
 
 st.markdown(
     '<div class="section-title">🏗️ Select Project</div>',
@@ -789,6 +818,9 @@ st.markdown(
 selected_project = st.selectbox(
     "Project",
     project_names,
+    index=project_names.index(
+        st.session_state.selected_project
+    ),
     key="project_selector"
 )
 
@@ -796,42 +828,68 @@ st.session_state.selected_project = (
     selected_project
 )
 
+
 # =========================================================
-# GET PROJECT SHEETS
+# SAFE PROJECT ACCESS
 # =========================================================
 
-project_info = (
-    st.session_state.projects[
-        selected_project
-    ]
-)
-
-project_sheets = project_info[
-    "sheets"
-]
-
-if not project_sheets:
+if (
+    selected_project
+    not in st.session_state.projects
+):
 
     st.warning(
-        "No readable sheets found in this project."
+        "Selected project is not available."
+    )
+
+    st.session_state.selected_project = (
+        project_names[0]
+    )
+
+    st.rerun()
+
+
+project_info = st.session_state.projects.get(
+    selected_project
+)
+
+if not project_info:
+
+    st.warning(
+        "Project data could not be loaded."
     )
 
     st.stop()
 
+
 # =========================================================
-# SHEET BUTTONS
+# GET SHEETS
 # =========================================================
 
-st.markdown(
-    '<div class="section-title">📑 Project Sections</div>',
-    unsafe_allow_html=True
+project_sheets = project_info.get(
+    "sheets",
+    {}
 )
+
+if not project_sheets:
+
+    st.warning(
+        "No readable sheets were found "
+        "in this project."
+    )
+
+    st.stop()
+
 
 sheet_names = list(
     project_sheets.keys()
 )
 
-# If selected sheet doesn't exist
+
+# =========================================================
+# SAFE SHEET SELECTION
+# =========================================================
+
 if (
     st.session_state.selected_sheet
     not in sheet_names
@@ -841,7 +899,16 @@ if (
         sheet_names[0]
     )
 
-# Create buttons in rows
+
+# =========================================================
+# SHEET BUTTONS
+# =========================================================
+
+st.markdown(
+    '<div class="section-title">📑 Project Sheets</div>',
+    unsafe_allow_html=True
+)
+
 buttons_per_row = 4
 
 for start in range(
@@ -870,15 +937,26 @@ for start in range(
                 == sheet_name
             )
 
-            button_label = (
-                f"✅ {sheet_name}"
-                if is_selected
-                else f"📄 {sheet_name}"
-            )
+            if is_selected:
+
+                label = (
+                    f"✅ {sheet_name}"
+                )
+
+            else:
+
+                label = (
+                    f"📄 {sheet_name}"
+                )
 
             if st.button(
-                button_label,
-                key=f"sheet_button_{selected_project}_{sheet_name}",
+                label,
+                key=(
+                    "sheet_button_"
+                    + str(hash(selected_project))
+                    + "_"
+                    + str(hash(sheet_name))
+                ),
                 use_container_width=True
             ):
 
@@ -888,6 +966,7 @@ for start in range(
 
                 st.rerun()
 
+
 # =========================================================
 # SELECTED SHEET
 # =========================================================
@@ -896,26 +975,52 @@ selected_sheet = (
     st.session_state.selected_sheet
 )
 
+if selected_sheet not in project_sheets:
+
+    selected_sheet = sheet_names[0]
+
+    st.session_state.selected_sheet = (
+        selected_sheet
+    )
+
+
 df = project_sheets[
     selected_sheet
 ].copy()
 
+
 # =========================================================
-# SHEET INFORMATION
+# SHEET INFO
 # =========================================================
 
 st.markdown(
     f"""
-    <div class="info-box">
-        <b>Project:</b> {selected_project}
+    <div style="
+        background:{LIGHT};
+        padding:12px 15px;
+        border-radius:8px;
+        margin-top:15px;
+        margin-bottom:15px;
+    ">
+
+        <b>Project:</b>
+        {selected_project}
+
         &nbsp;&nbsp; | &nbsp;&nbsp;
-        <b>Sheet:</b> {selected_sheet}
+
+        <b>Sheet:</b>
+        {selected_sheet}
+
         &nbsp;&nbsp; | &nbsp;&nbsp;
-        <b>Records:</b> {len(df):,}
+
+        <b>Records:</b>
+        {len(df):,}
+
     </div>
     """,
     unsafe_allow_html=True
 )
+
 
 # =========================================================
 # PR FILTER
@@ -956,15 +1061,20 @@ if pr_column:
     selected_pr = st.selectbox(
         f"PR ({pr_column})",
         pr_options,
-        key=f"pr_filter_{selected_project}_{selected_sheet}"
+        key=(
+            "pr_filter_"
+            + str(hash(selected_project))
+            + "_"
+            + str(hash(selected_sheet))
+        )
     )
 
 else:
 
     st.info(
-        f"No PR column found in sheet: "
-        f"{selected_sheet}"
+        "This sheet does not contain a PR column."
     )
+
 
 # =========================================================
 # APPLY PR FILTER
@@ -987,13 +1097,22 @@ if (
         selected_pr
     ].copy()
 
+
 # =========================================================
 # SEARCH
 # =========================================================
 
 search_text = st.text_input(
-    "🔍 Search in this sheet",
-    placeholder="Type to search..."
+    "🔍 Search",
+    placeholder=(
+        "Search in the selected sheet..."
+    ),
+    key=(
+        "search_"
+        + str(hash(selected_project))
+        + "_"
+        + str(hash(selected_sheet))
+    )
 )
 
 if search_text:
@@ -1031,8 +1150,9 @@ if search_text:
             mask
         ].copy()
 
+
 # =========================================================
-# KPI COLUMN DETECTION
+# NUMERIC COLUMN DETECTION
 # =========================================================
 
 budget_column = find_numeric_column(
@@ -1077,6 +1197,7 @@ quantity_column = find_numeric_column(
         "Requested Quantity"
     ]
 )
+
 
 # =========================================================
 # KPI CALCULATIONS
@@ -1147,7 +1268,6 @@ if quantity_column:
 
 remaining_value = 0
 
-
 if (
     budget_column
     and actual_column
@@ -1155,8 +1275,7 @@ if (
 
     remaining_value = (
         budget_value
-        -
-        actual_value
+        - actual_value
     )
 
 elif (
@@ -1166,12 +1285,12 @@ elif (
 
     remaining_value = (
         planned_value
-        -
-        actual_value
+        - actual_value
     )
 
+
 # =========================================================
-# KPIs
+# KPI SECTION
 # =========================================================
 
 st.markdown(
@@ -1179,9 +1298,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-kpis = st.columns(6)
+kpi_columns = st.columns(6)
 
-with kpis[0]:
+with kpi_columns[0]:
 
     show_kpi(
         "Records",
@@ -1190,7 +1309,7 @@ with kpis[0]:
         )
     )
 
-with kpis[1]:
+with kpi_columns[1]:
 
     show_kpi(
         "PRs",
@@ -1199,7 +1318,7 @@ with kpis[1]:
         )
     )
 
-with kpis[2]:
+with kpi_columns[2]:
 
     show_kpi(
         "Budget",
@@ -1208,7 +1327,7 @@ with kpis[2]:
         )
     )
 
-with kpis[3]:
+with kpi_columns[3]:
 
     show_kpi(
         "Planned",
@@ -1217,7 +1336,7 @@ with kpis[3]:
         )
     )
 
-with kpis[4]:
+with kpi_columns[4]:
 
     show_kpi(
         "Actual",
@@ -1226,7 +1345,7 @@ with kpis[4]:
         )
     )
 
-with kpis[5]:
+with kpi_columns[5]:
 
     show_kpi(
         "Quantity",
@@ -1234,6 +1353,7 @@ with kpis[5]:
             quantity_value
         )
     )
+
 
 # =========================================================
 # CURRENT SELECTION
@@ -1244,28 +1364,29 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-selection_1, selection_2, selection_3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-with selection_1:
+with col1:
 
     st.metric(
         "Project",
         selected_project
     )
 
-with selection_2:
+with col2:
 
     st.metric(
         "Sheet",
         selected_sheet
     )
 
-with selection_3:
+with col3:
 
     st.metric(
         "PR",
         selected_pr
     )
+
 
 # =========================================================
 # PR SUMMARY
@@ -1306,6 +1427,7 @@ if (
         hide_index=True
     )
 
+
 # =========================================================
 # MAIN TABLE
 # =========================================================
@@ -1319,16 +1441,27 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-display_df = clean_dataframe_for_display(
-    filtered_df
-)
+if filtered_df.empty:
 
-st.dataframe(
-    display_df,
-    use_container_width=True,
-    height=550,
-    hide_index=True
-)
+    st.warning(
+        "No data matches the current filters."
+    )
+
+else:
+
+    display_df = (
+        clean_dataframe_for_display(
+            filtered_df
+        )
+    )
+
+    st.dataframe(
+        display_df,
+        use_container_width=True,
+        height=550,
+        hide_index=True
+    )
+
 
 # =========================================================
 # DOWNLOAD
@@ -1354,6 +1487,7 @@ st.download_button(
     ),
     mime="text/csv"
 )
+
 
 # =========================================================
 # FOOTER
