@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 import openpyxl
@@ -79,42 +80,55 @@ def get_excel_files():
 def find_ranges(ws):
 
     """
-    Detect separate data blocks inside the worksheet.
+    Find separate blocks of data inside the worksheet.
 
     Example:
 
-    A1:D10   -> Table 1
-
-    A13:C20  -> Table 2
-
-    F1:H8    -> Table 3
+    A1:D20   -> first table
+    A23:F40  -> second table
+    H1:K15   -> third table
     """
 
     max_row = ws.max_row
     max_col = ws.max_column
 
     # -----------------------------------------------------
-    # Find rows containing data
+    # Find rows that contain data
     # -----------------------------------------------------
 
     rows_with_data = []
 
-    for r in range(1, max_row + 1):
+    for row_number in range(
+        1,
+        max_row + 1
+    ):
 
         has_data = False
 
-        for c in range(1, max_col + 1):
+        for col_number in range(
+            1,
+            max_col + 1
+        ):
 
-            value = ws.cell(r, c).value
+            value = ws.cell(
+                row_number,
+                col_number
+            ).value
 
             if value is not None:
+
                 has_data = True
                 break
 
         if has_data:
-            rows_with_data.append(r)
+
+            rows_with_data.append(
+                row_number
+            )
+
 
     if not rows_with_data:
+
         return []
 
 
@@ -124,31 +138,38 @@ def find_ranges(ws):
 
     row_groups = []
 
-    start = rows_with_data[0]
-    previous = rows_with_data[0]
+    start_row = rows_with_data[0]
+    previous_row = rows_with_data[0]
 
-    for row in rows_with_data[1:]:
+    for row_number in rows_with_data[1:]:
 
-        if row == previous + 1:
+        if row_number == previous_row + 1:
 
-            previous = row
+            previous_row = row_number
 
         else:
 
             row_groups.append(
-                (start, previous)
+                (
+                    start_row,
+                    previous_row
+                )
             )
 
-            start = row
-            previous = row
+            start_row = row_number
+            previous_row = row_number
+
 
     row_groups.append(
-        (start, previous)
+        (
+            start_row,
+            previous_row
+        )
     )
 
 
     # -----------------------------------------------------
-    # Find column blocks inside each row group
+    # Find column blocks
     # -----------------------------------------------------
 
     ranges = []
@@ -157,25 +178,37 @@ def find_ranges(ws):
 
         columns_with_data = []
 
-        for c in range(1, max_col + 1):
+        for col_number in range(
+            1,
+            max_col + 1
+        ):
 
             has_data = False
 
-            for r in range(
+            for row_number in range(
                 row_start,
                 row_end + 1
             ):
 
-                if ws.cell(r, c).value is not None:
+                value = ws.cell(
+                    row_number,
+                    col_number
+                ).value
+
+                if value is not None:
 
                     has_data = True
                     break
 
             if has_data:
-                columns_with_data.append(c)
+
+                columns_with_data.append(
+                    col_number
+                )
 
 
         if not columns_with_data:
+
             continue
 
 
@@ -188,23 +221,30 @@ def find_ranges(ws):
         start_col = columns_with_data[0]
         previous_col = columns_with_data[0]
 
-        for col in columns_with_data[1:]:
+        for col_number in columns_with_data[1:]:
 
-            if col == previous_col + 1:
+            if col_number == previous_col + 1:
 
-                previous_col = col
+                previous_col = col_number
 
             else:
 
                 col_groups.append(
-                    (start_col, previous_col)
+                    (
+                        start_col,
+                        previous_col
+                    )
                 )
 
-                start_col = col
-                previous_col = col
+                start_col = col_number
+                previous_col = col_number
+
 
         col_groups.append(
-            (start_col, previous_col)
+            (
+                start_col,
+                previous_col
+            )
         )
 
 
@@ -223,6 +263,7 @@ def find_ranges(ws):
                 }
             )
 
+
     return ranges
 
 
@@ -240,6 +281,10 @@ def range_to_dataframe(
 
     values = []
 
+    # -----------------------------------------------------
+    # Read cells
+    # -----------------------------------------------------
+
     for row in ws.iter_rows(
         min_row=min_row,
         max_row=max_row,
@@ -254,10 +299,13 @@ def range_to_dataframe(
 
 
     if not values:
+
         return pd.DataFrame()
 
 
+    # -----------------------------------------------------
     # Remove completely empty rows
+    # -----------------------------------------------------
 
     values = [
         row
@@ -270,54 +318,68 @@ def range_to_dataframe(
 
 
     if not values:
+
         return pd.DataFrame()
 
 
-    # -----------------------------------------------------
-    # First row = header
-    # -----------------------------------------------------
+    # =====================================================
+    # FIRST ROW = COLUMN NAMES
+    # =====================================================
 
     header = values[0]
 
     data = values[1:]
 
 
-    # -----------------------------------------------------
-    # Create unique column names
-    # -----------------------------------------------------
+    # =====================================================
+    # CLEAN COLUMN NAMES
+    # =====================================================
 
     columns = []
 
     for index, column in enumerate(header):
 
-        if column is None or str(column).strip() == "":
+        # Empty header
+        if (
+            column is None
+            or str(column).strip() == ""
+        ):
 
-            column_name = f"Column {index + 1}"
+            column_name = (
+                f"Column {index + 1}"
+            )
 
         else:
 
-            column_name = str(column)
+            column_name = str(
+                column
+            ).strip()
 
 
-        # Make column names unique
+        # -------------------------------------------------
+        # Make duplicate names unique
+        # -------------------------------------------------
 
         original_name = column_name
+
         counter = 2
 
         while column_name in columns:
 
             column_name = (
-                f"{original_name} {counter}"
+                f"{original_name}_{counter}"
             )
 
             counter += 1
 
-        columns.append(column_name)
+        columns.append(
+            column_name
+        )
 
 
-    # -----------------------------------------------------
-    # Create DataFrame
-    # -----------------------------------------------------
+    # =====================================================
+    # CREATE DATAFRAME
+    # =====================================================
 
     if data:
 
@@ -333,14 +395,18 @@ def range_to_dataframe(
         )
 
 
-    # Remove completely empty rows
+    # =====================================================
+    # REMOVE EMPTY ROWS
+    # =====================================================
 
     df = df.dropna(
         how="all"
     )
 
 
-    # Remove completely empty columns
+    # =====================================================
+    # REMOVE EMPTY COLUMNS
+    # =====================================================
 
     df = df.dropna(
         axis=1,
@@ -352,7 +418,7 @@ def range_to_dataframe(
 
 
 # =========================================================
-# LOAD EXCEL WORKBOOK
+# LOAD EXCEL FILE
 # =========================================================
 
 @st.cache_data(show_spinner=False)
@@ -371,27 +437,9 @@ def load_excel_file(file_path):
 
             ranges = find_ranges(ws)
 
-            tables = []
-
-            # -------------------------------------------------
-            # Excel Tables
-            # -------------------------------------------------
-
-            for table_name, table in ws.tables.items():
-
-                tables.append(
-                    {
-                        "name": table_name,
-                        "range": table.ref
-                    }
-                )
-
-
             project_data[ws.title] = {
-                "ranges": ranges,
-                "tables": tables
+                "ranges": ranges
             }
-
 
         return project_data
 
@@ -425,7 +473,7 @@ st.markdown(
 
 
 # =========================================================
-# GET FILES
+# GET EXCEL FILES
 # =========================================================
 
 excel_files = get_excel_files()
@@ -441,8 +489,24 @@ if not DATA_FOLDER.exists():
         "❌ The data folder does not exist."
     )
 
+    st.write(
+        "Expected location:"
+    )
+
     st.code(
         str(DATA_FOLDER)
+    )
+
+    st.info(
+        """
+        GitHub structure:
+
+        test_streamlit/
+        ├── app.py
+        ├── requirements.txt
+        └── data/
+            └── Project.xlsx
+        """
     )
 
     st.stop()
@@ -458,6 +522,10 @@ if not excel_files:
         "❌ No Excel files found inside the data folder."
     )
 
+    st.write(
+        "The application is looking here:"
+    )
+
     st.code(
         str(DATA_FOLDER)
     )
@@ -468,7 +536,9 @@ if not excel_files:
 
     if items:
 
-        st.write("Files/folders found:")
+        st.write(
+            "Files/folders currently found:"
+        )
 
         for item in items:
 
@@ -479,8 +549,20 @@ if not excel_files:
     else:
 
         st.warning(
-            "The data folder is empty."
+            "The data folder is completely empty."
         )
+
+    st.info(
+        """
+        Upload your Excel file inside the GitHub
+        `data` folder.
+
+        Example:
+
+        data/
+        └── Project.xlsx
+        """
+    )
 
     st.stop()
 
@@ -506,7 +588,9 @@ project_files = {
 
 with st.sidebar:
 
-    st.header("📁 Projects")
+    st.header(
+        "📁 Projects"
+    )
 
     selected_project = st.selectbox(
         "Select Project",
@@ -515,7 +599,9 @@ with st.sidebar:
 
     st.divider()
 
-    st.write("Excel files found:")
+    st.write(
+        "Excel files found:"
+    )
 
     st.write(
         f"**{len(excel_files)}**"
@@ -531,7 +617,7 @@ with st.sidebar:
 
 
 # =========================================================
-# LOAD PROJECT
+# LOAD SELECTED PROJECT
 # =========================================================
 
 selected_file = project_files[
@@ -550,7 +636,7 @@ project_data = load_excel_file(
 if not project_data:
 
     st.error(
-        "❌ No sheets were found."
+        "❌ No sheets were found in this Excel file."
     )
 
     st.stop()
@@ -562,10 +648,13 @@ sheet_names = list(
 
 
 # =========================================================
-# SHEET SELECTION
+# SELECTED SHEET STATE
 # =========================================================
 
-if "selected_sheet" not in st.session_state:
+if (
+    "selected_sheet"
+    not in st.session_state
+):
 
     st.session_state.selected_sheet = (
         sheet_names[0]
@@ -602,6 +691,7 @@ st.subheader(
 )
 
 BUTTONS_PER_ROW = 4
+
 
 for start in range(
     0,
@@ -645,10 +735,6 @@ selected_sheet = (
     st.session_state.selected_sheet
 )
 
-sheet_data = project_data[
-    selected_sheet
-]
-
 
 # =========================================================
 # SHEET TITLE
@@ -664,200 +750,87 @@ st.caption(
 
 
 # =========================================================
-# DISPLAY DATA ONLY
+# OPEN WORKBOOK
 # =========================================================
-
-st.subheader(
-    "📊 Sheet Data"
-)
-
-
-# =========================================================
-# EXCEL TABLES
-# =========================================================
-
-if sheet_data["tables"]:
-
-    st.markdown(
-        "### 📋 Excel Tables"
-    )
-
-    for table in sheet_data["tables"]:
-
-        table_name = table["name"]
-        table_range = table["range"]
-
-        st.markdown(
-            f"#### {table_name}"
-        )
-
-        # Parse Excel range
-
-        from openpyxl.utils.cell import range_boundaries
-
-        min_col, min_row, max_col, max_row = (
-            range_boundaries(table_range)
-        )
-
-        df_table = range_to_dataframe(
-            # Need worksheet
-            openpyxl.load_workbook(
-                selected_file,
-                data_only=True
-            )[selected_sheet],
-
-            min_row,
-            max_row,
-            min_col,
-            max_col
-        )
-
-        if not df_table.empty:
-
-            st.dataframe(
-                df_table,
-                use_container_width=True,
-                hide_index=True
-            )
-
-
-# =========================================================
-# OTHER RANGES
-# =========================================================
-
-st.markdown(
-    "### 📦 Other Data Ranges"
-)
-
 
 workbook = openpyxl.load_workbook(
     selected_file,
     data_only=True
 )
 
-ws = workbook[selected_sheet]
-
-
-ranges = sheet_data["ranges"]
-
-
-# ---------------------------------------------------------
-# Remove ranges already represented by Excel Tables
-# ---------------------------------------------------------
-
-table_ranges = set(
-    table["range"]
-    for table in sheet_data["tables"]
-)
-
-
-range_number = 1
-
-
-for item in ranges:
-
-    min_row = item["min_row"]
-    max_row = item["max_row"]
-    min_col = item["min_col"]
-    max_col = item["max_col"]
-
-
-    # Excel range notation
-
-    from openpyxl.utils import get_column_letter
-
-    excel_range = (
-        f"{get_column_letter(min_col)}{min_row}:"
-        f"{get_column_letter(max_col)}{max_row}"
-    )
-
-
-    # Skip if already an Excel Table
-
-    if excel_range in table_ranges:
-
-        continue
-
-
-    df_range = range_to_dataframe(
-        ws,
-        min_row,
-        max_row,
-        min_col,
-        max_col
-    )
-
-
-    if df_range.empty:
-
-        continue
-
-
-    st.markdown(
-        f"#### Range {range_number}"
-    )
-
-    st.caption(
-        f"Excel Range: `{excel_range}`"
-    )
-
-    st.dataframe(
-        df_range,
-        use_container_width=True,
-        hide_index=True
-    )
-
-    range_number += 1
+ws = workbook[
+    selected_sheet
+]
 
 
 # =========================================================
-# DOWNLOAD
+# FIND DATA RANGES
 # =========================================================
 
-st.divider()
-
-st.subheader(
-    "⬇️ Download"
+ranges = find_ranges(
+    ws
 )
 
 
-# Create combined data for download
+# =========================================================
+# DISPLAY DATA
+# =========================================================
 
-all_download_data = []
+if not ranges:
 
-for item in ranges:
-
-    df_range = range_to_dataframe(
-        ws,
-        item["min_row"],
-        item["max_row"],
-        item["min_col"],
-        item["max_col"]
+    st.info(
+        "This sheet does not contain any data."
     )
 
-    if not df_range.empty:
+else:
 
-        all_download_data.append(
-            df_range
+    for item in ranges:
+
+        min_row = item["min_row"]
+        max_row = item["max_row"]
+        min_col = item["min_col"]
+        max_col = item["max_col"]
+
+
+        # -------------------------------------------------
+        # Convert Range to DataFrame
+        # -------------------------------------------------
+
+        df = range_to_dataframe(
+            ws,
+            min_row,
+            max_row,
+            min_col,
+            max_col
         )
 
 
-if all_download_data:
+        # -------------------------------------------------
+        # Skip empty data
+        # -------------------------------------------------
 
-    download_df = pd.concat(
-        all_download_data,
-        ignore_index=True
-    )
+        if df.empty:
 
-    csv = download_df.to_csv(
-        index=False
-    ).encode(
-        "utf-8-sig"
-    )
+            continue
 
-    st.download_button(
-        "⬇️ Download Sheet Data",
-        csv,
-        file_name=f"{selected_sheet}.csv",
-        mime="text/csv"
-    )
+
+        # -------------------------------------------------
+        # DISPLAY
+        #
+        # FIRST ROW = COLUMN NAMES
+        # REST = DATA
+        # -------------------------------------------------
+
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            height=600
+        )
+
+
+        # Small spacing
+        st.markdown(
+            "<br>",
+            unsafe_allow_html=True
+        )
