@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -618,6 +619,14 @@ def parse_sheet(ws):
 
         result = parser(grid) if parser else None
 
+        # PO number lives in the sheet name (e.g. "PO 94000171374 MASTER")
+        if result and result["type"] == "pr":
+            match = re.search(r"\d{8,}", ws.title)
+            result["summary"] = {
+                "PO No": match.group(0) if match else None,
+                **result["summary"],
+            }
+
         # parser could not understand the sheet -> safe fallback
         return result or parse_generic(grid)
 
@@ -703,12 +712,13 @@ def show_pr(data, sheet):
     info = data["info"]
     summary = data["summary"]
 
-    c = st.columns(5)
-    c[0].metric("PR No", fmt(summary["PR No"]) or "—")
-    c[1].metric("PR Date", fmt(summary["Date"]) or "—")
-    c[2].metric("Category", summary["Category"] or "—")
-    c[3].metric("Supplier", summary["Supplier"] or "—")
-    c[4].metric("Items", summary["Items"])
+    c = st.columns(6)
+    c[0].metric("PO No", summary.get("PO No") or "—")
+    c[1].metric("PR No", fmt(summary["PR No"]) or "—")
+    c[2].metric("PR Date", fmt(summary["Date"]) or "—")
+    c[3].metric("Category", summary["Category"] or "—")
+    c[4].metric("Supplier", summary["Supplier"] or "—")
+    c[5].metric("Items", summary["Items"])
 
     extra = [
         f"**{k}:** {fmt(v)}"
