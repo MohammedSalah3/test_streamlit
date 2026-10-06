@@ -10,7 +10,7 @@ import hashlib
 # =========================================================
 
 st.set_page_config(
-    page_title="Hassan Allam Construction | PR Dashboard",
+    page_title="Hassan Allam Construction | Projects Dashboard",
     page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -74,7 +74,7 @@ st.markdown(
         border: 1px solid {BORDER};
         border-radius: 12px;
         padding: 18px;
-        min-height: 110px;
+        min-height: 105px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }}
 
@@ -91,26 +91,10 @@ st.markdown(
         font-weight: 700;
     }}
 
-    .project-card {{
-        background: #FFFFFF;
+    .sheet-button {{
         border: 1px solid {BORDER};
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 8px;
-    }}
-
-    .project-name {{
-        color: {DARK};
-        font-weight: 600;
-        font-size: 14px;
-    }}
-
-    .info-box {{
-        background: #F8F9FA;
-        border-left: 4px solid {PRIMARY};
-        padding: 12px 15px;
-        border-radius: 6px;
-        margin-bottom: 15px;
+        border-radius: 8px;
+        padding: 10px;
     }}
 
     </style>
@@ -125,14 +109,18 @@ st.markdown(
 if "projects" not in st.session_state:
     st.session_state.projects = {}
 
+if "selected_project" not in st.session_state:
+    st.session_state.selected_project = None
+
+if "selected_sheet" not in st.session_state:
+    st.session_state.selected_sheet = None
+
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
 
 def clean_column_name(column):
-    """
-    Clean Excel column names.
-    """
+
     if column is None:
         return ""
 
@@ -144,9 +132,6 @@ def clean_column_name(column):
 
 
 def make_unique_columns(columns):
-    """
-    Make duplicate Excel column names unique.
-    """
 
     result = []
     counter = {}
@@ -159,33 +144,41 @@ def make_unique_columns(columns):
             col = "Unnamed"
 
         if col not in counter:
+
             counter[col] = 0
             result.append(col)
+
         else:
+
             counter[col] += 1
-            result.append(f"{col}_{counter[col]}")
+
+            result.append(
+                f"{col}_{counter[col]}"
+            )
 
     return result
 
 
 def pretty_project_name(filename):
-    """
-    Convert filename to readable project name.
-    """
 
     name = filename.rsplit(".", 1)[0]
 
-    name = re.sub(r"[_\-]+", " ", name)
+    name = re.sub(
+        r"[_\-]+",
+        " ",
+        name
+    )
 
-    name = re.sub(r"\s+", " ", name).strip()
+    name = re.sub(
+        r"\s+",
+        " ",
+        name
+    ).strip()
 
     return name
 
 
 def file_hash(uploaded_file):
-    """
-    Generate unique hash for uploaded file.
-    """
 
     content = uploaded_file.getvalue()
 
@@ -193,14 +186,14 @@ def file_hash(uploaded_file):
 
 
 def detect_header_row(raw_df):
-    """
-    Try to detect the actual header row.
-    """
 
     if raw_df.empty:
         return 0
 
-    max_rows_to_check = min(len(raw_df), 15)
+    max_rows_to_check = min(
+        len(raw_df),
+        15
+    )
 
     best_row = 0
     best_score = -1
@@ -212,7 +205,8 @@ def detect_header_row(raw_df):
         values = [
             str(x).strip()
             for x in row.tolist()
-            if pd.notna(x) and str(x).strip()
+            if pd.notna(x)
+            and str(x).strip()
         ]
 
         if not values:
@@ -236,23 +230,26 @@ def detect_header_row(raw_df):
         ]
 
         for value in values:
+
             value_lower = value.lower()
 
             for keyword in keywords:
+
                 if keyword in value_lower:
                     score += 2
 
         if score > best_score:
+
             best_score = score
             best_row = i
 
     return best_row
 
 
-def read_excel_sheet(excel_bytes, sheet_name):
-    """
-    Read one Excel sheet and detect its header.
-    """
+def read_excel_sheet(
+    excel_bytes,
+    sheet_name
+):
 
     try:
 
@@ -265,43 +262,57 @@ def read_excel_sheet(excel_bytes, sheet_name):
         if raw.empty:
             return pd.DataFrame()
 
-        header_row = detect_header_row(raw)
+        header_row = detect_header_row(
+            raw
+        )
 
-        headers = raw.iloc[header_row].tolist()
+        headers = raw.iloc[
+            header_row
+        ].tolist()
 
-        headers = make_unique_columns(headers)
+        headers = make_unique_columns(
+            headers
+        )
 
-        df = raw.iloc[header_row + 1:].copy()
+        df = raw.iloc[
+            header_row + 1:
+        ].copy()
 
         df.columns = headers
 
-        df = df.dropna(how="all")
+        df = df.dropna(
+            how="all"
+        )
 
-        df = df.reset_index(drop=True)
+        df = df.dropna(
+            axis=1,
+            how="all"
+        )
 
-        # Remove columns where everything is empty
-        df = df.dropna(axis=1, how="all")
+        df = df.reset_index(
+            drop=True
+        )
 
-        # Clean columns
-        df.columns = make_unique_columns(df.columns)
+        df.columns = make_unique_columns(
+            df.columns
+        )
 
         return df
 
-    except Exception:
+    except Exception as e:
+
         return pd.DataFrame()
 
 
 def load_excel_file(excel_bytes):
-    """
-    Read all sheets from one Excel file
-    and combine them into one project dataset.
-    """
+
+    sheets = {}
 
     try:
 
-        excel = pd.ExcelFile(BytesIO(excel_bytes))
-
-        all_data = []
+        excel = pd.ExcelFile(
+            BytesIO(excel_bytes)
+        )
 
         for sheet_name in excel.sheet_names:
 
@@ -310,83 +321,26 @@ def load_excel_file(excel_bytes):
                 sheet_name
             )
 
-            if df.empty:
-                continue
+            if not df.empty:
 
-            df["_Source Sheet"] = sheet_name
-
-            all_data.append(df)
-
-        if not all_data:
-            return pd.DataFrame()
-
-        combined = pd.concat(
-            all_data,
-            ignore_index=True,
-            sort=False
-        )
-
-        combined = combined.dropna(
-            how="all"
-        )
-
-        combined = combined.reset_index(drop=True)
-
-        return combined
+                sheets[sheet_name] = df
 
     except Exception as e:
 
         st.error(
-            f"Error reading Excel file: {str(e)}"
+            f"Error reading Excel file: {e}"
         )
 
-        return pd.DataFrame()
-
-
-def find_column(df, candidates):
-    """
-    Find a column using exact and partial matching.
-    """
-
-    if df is None or df.empty:
-        return None
-
-    columns = list(df.columns)
-
-    # Exact match
-    for candidate in candidates:
-
-        for col in columns:
-
-            if str(col).strip().lower() == candidate.lower():
-                return col
-
-    # Partial match
-    for candidate in candidates:
-
-        candidate_lower = candidate.lower()
-
-        for col in columns:
-
-            col_lower = str(col).strip().lower()
-
-            if candidate_lower in col_lower:
-                return col
-
-    return None
+    return sheets
 
 
 def find_pr_column(df):
-    """
-    Detect PR column.
-    """
 
     if df is None or df.empty:
         return None
 
     columns = list(df.columns)
 
-    # Strong exact matches first
     exact_candidates = [
         "PR",
         "PR Number",
@@ -400,22 +354,40 @@ def find_pr_column(df):
         "Requisition No"
     ]
 
+    # Exact match
     for candidate in exact_candidates:
 
         for col in columns:
 
-            if str(col).strip().lower() == candidate.lower():
+            if (
+                str(col)
+                .strip()
+                .lower()
+                ==
+                candidate.lower()
+            ):
+
                 return col
 
-    # Regex / partial detection
+    # Regex / partial
     for col in columns:
 
-        col_text = str(col).strip().lower()
+        col_text = (
+            str(col)
+            .strip()
+            .lower()
+        )
 
-        if re.fullmatch(r"pr", col_text):
+        if re.fullmatch(
+            r"pr",
+            col_text
+        ):
             return col
 
-        if re.search(r"\bpr\s*(number|no|no\.)\b", col_text):
+        if re.search(
+            r"\bpr\s*(number|no|no\.)\b",
+            col_text
+        ):
             return col
 
         if "purchase requisition" in col_text:
@@ -430,56 +402,30 @@ def find_pr_column(df):
     return None
 
 
-def numeric_series(df, column):
-    """
-    Convert column to numeric safely.
-    """
-
-    if column is None or column not in df.columns:
-        return pd.Series(dtype=float)
-
-    series = df[column]
-
-    if pd.api.types.is_numeric_dtype(series):
-        return pd.to_numeric(
-            series,
-            errors="coerce"
-        )
-
-    cleaned = (
-        series.astype(str)
-        .str.replace(",", "", regex=False)
-        .str.replace("EGP", "", regex=False)
-        .str.replace("$", "", regex=False)
-        .str.replace("€", "", regex=False)
-        .str.strip()
-    )
-
-    return pd.to_numeric(
-        cleaned,
-        errors="coerce"
-    )
-
-
-def find_numeric_column(df, candidates):
-    """
-    Find likely financial/numeric column.
-    """
+def find_numeric_column(
+    df,
+    candidates
+):
 
     if df.empty:
         return None
 
     columns = list(df.columns)
 
-    # Exact first
     for candidate in candidates:
 
         for col in columns:
 
-            if str(col).strip().lower() == candidate.lower():
+            if (
+                str(col)
+                .strip()
+                .lower()
+                ==
+                candidate.lower()
+            ):
+
                 return col
 
-    # Partial
     for candidate in candidates:
 
         candidate_lower = candidate.lower()
@@ -490,21 +436,75 @@ def find_numeric_column(df, candidates):
 
             if candidate_lower in col_lower:
 
-                test = numeric_series(df, col)
+                series = pd.to_numeric(
+                    df[col],
+                    errors="coerce"
+                )
 
-                if test.notna().sum() > 0:
+                if series.notna().sum() > 0:
                     return col
 
     return None
 
 
-def format_number(value):
-    """
-    Format KPI numbers.
-    """
+def numeric_series(
+    df,
+    column
+):
 
-    if value is None:
-        return "0"
+    if (
+        column is None
+        or column not in df.columns
+    ):
+
+        return pd.Series(
+            dtype=float
+        )
+
+    series = df[column]
+
+    if pd.api.types.is_numeric_dtype(
+        series
+    ):
+
+        return pd.to_numeric(
+            series,
+            errors="coerce"
+        )
+
+    cleaned = (
+        series
+        .astype(str)
+        .str.replace(
+            ",",
+            "",
+            regex=False
+        )
+        .str.replace(
+            "EGP",
+            "",
+            regex=False
+        )
+        .str.replace(
+            "$",
+            "",
+            regex=False
+        )
+        .str.replace(
+            "€",
+            "",
+            regex=False
+        )
+        .str.strip()
+    )
+
+    return pd.to_numeric(
+        cleaned,
+        errors="coerce"
+    )
+
+
+def format_number(value):
 
     try:
 
@@ -514,55 +514,54 @@ def format_number(value):
         value = float(value)
 
         if value.is_integer():
+
             return f"{int(value):,}"
 
         return f"{value:,.2f}"
 
     except Exception:
-        return str(value)
+
+        return "0"
 
 
 def format_currency(value):
-    """
-    Format financial KPI.
-    """
-
-    if value is None:
-        return "0"
 
     try:
 
         if pd.isna(value):
             return "0"
 
-        value = float(value)
-
-        return f"{value:,.2f}"
+        return f"{float(value):,.2f}"
 
     except Exception:
-        return str(value)
+
+        return "0"
 
 
-def show_kpi(title, value):
-    """
-    Render KPI card.
-    """
+def show_kpi(
+    title,
+    value
+):
 
     st.markdown(
         f"""
         <div class="kpi-card">
-            <div class="kpi-title">{title}</div>
-            <div class="kpi-value">{value}</div>
+            <div class="kpi-title">
+                {title}
+            </div>
+
+            <div class="kpi-value">
+                {value}
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
 
-def clean_dataframe_for_display(df):
-    """
-    Prepare dataframe for display.
-    """
+def clean_dataframe_for_display(
+    df
+):
 
     result = df.copy()
 
@@ -571,17 +570,20 @@ def clean_dataframe_for_display(df):
         if pd.api.types.is_datetime64_any_dtype(
             result[col]
         ):
-            result[col] = result[col].dt.strftime(
-                "%Y-%m-%d"
+
+            result[col] = (
+                result[col]
+                .dt.strftime(
+                    "%Y-%m-%d"
+                )
             )
 
     return result
 
 
-def register_uploaded_files(uploaded_files):
-    """
-    Register uploaded Excel files as projects.
-    """
+def register_uploaded_files(
+    uploaded_files
+):
 
     if not uploaded_files:
         return
@@ -590,113 +592,65 @@ def register_uploaded_files(uploaded_files):
 
         try:
 
-            file_bytes = uploaded_file.getvalue()
+            file_bytes = (
+                uploaded_file.getvalue()
+            )
 
             if not file_bytes:
                 continue
 
-            project_name = pretty_project_name(
-                uploaded_file.name
+            project_name = (
+                pretty_project_name(
+                    uploaded_file.name
+                )
             )
 
             unique_hash = file_hash(
                 uploaded_file
             )
 
-            # If same file already exists, don't reload
-            existing = st.session_state.projects.get(
-                project_name
+            existing = (
+                st.session_state.projects
+                .get(project_name)
             )
 
             if (
                 existing
-                and existing.get("hash") == unique_hash
+                and existing.get(
+                    "hash"
+                )
+                == unique_hash
             ):
+
                 continue
 
-            data = load_excel_file(
+            sheets = load_excel_file(
                 file_bytes
             )
 
             st.session_state.projects[
                 project_name
             ] = {
-                "file_name": uploaded_file.name,
-                "file_bytes": file_bytes,
-                "hash": unique_hash,
-                "data": data
+
+                "file_name":
+                    uploaded_file.name,
+
+                "file_bytes":
+                    file_bytes,
+
+                "hash":
+                    unique_hash,
+
+                "sheets":
+                    sheets
             }
 
         except Exception as e:
 
             st.error(
-                f"Could not load {uploaded_file.name}: {e}"
+                f"Could not load "
+                f"{uploaded_file.name}: {e}"
             )
-
-
-def get_dynamic_filter_columns(df, excluded_columns):
-    """
-    Detect useful categorical columns for filters.
-    """
-
-    filters = []
-
-    priority_words = [
-        "supplier",
-        "vendor",
-        "status",
-        "category",
-        "department",
-        "section",
-        "location",
-        "item",
-        "material",
-        "type",
-        "discipline",
-        "company"
-    ]
-
-    for col in df.columns:
-
-        if col in excluded_columns:
-            continue
-
-        series = df[col]
-
-        if pd.api.types.is_numeric_dtype(series):
-            continue
-
-        non_null = series.dropna()
-
-        if non_null.empty:
-            continue
-
-        unique_count = non_null.astype(str).nunique()
-
-        # Only useful categorical columns
-        if unique_count <= 40:
-
-            col_lower = str(col).lower()
-
-            priority = any(
-                word in col_lower
-                for word in priority_words
-            )
-
-            if priority:
-                filters.insert(0, col)
-            else:
-                filters.append(col)
-
-    # Remove duplicates
-    result = []
-
-    for col in filters:
-
-        if col not in result:
-            result.append(col)
-
-    return result[:12]
 
 
 # =========================================================
@@ -708,8 +662,9 @@ st.markdown(
     <div class="company-title">
         {COMPANY}
     </div>
+
     <div class="company-subtitle">
-        Construction Projects & Purchase Requisitions Dashboard
+        Construction Projects Dashboard
     </div>
     """,
     unsafe_allow_html=True
@@ -730,8 +685,11 @@ with st.sidebar:
     )
 
     uploaded_files = st.file_uploader(
-        "Upload Excel Project Files",
-        type=["xlsx", "xls"],
+        "Upload Excel Files",
+        type=[
+            "xlsx",
+            "xls"
+        ],
         accept_multiple_files=True,
         key="project_uploader"
     )
@@ -747,38 +705,51 @@ with st.sidebar:
     if st.session_state.projects:
 
         st.markdown(
-            f"**Registered Projects: {len(st.session_state.projects)}**"
+            f"""
+            **Projects: 
+            {len(st.session_state.projects)}**
+            """
         )
 
         for project_name in sorted(
             st.session_state.projects.keys()
         ):
 
-            data = st.session_state.projects[
-                project_name
-            ]["data"]
+            project_info = (
+                st.session_state.projects[
+                    project_name
+                ]
+            )
 
-            rows = len(data)
+            sheet_count = len(
+                project_info[
+                    "sheets"
+                ]
+            )
 
             st.markdown(
                 f"""
-                <div class="project-card">
-                    <div class="project-name">
-                        🏗️ {project_name}
-                    </div>
-                    <div style="font-size:12px;color:{GRAY};">
-                        {rows:,} records
-                    </div>
+                <div style="
+                    padding:8px;
+                    border-bottom:
+                    1px solid {BORDER};
+                ">
+
+                <b>🏗️ {project_name}</b>
+
+                <br>
+
+                <span style="
+                    color:{GRAY};
+                    font-size:12px;
+                ">
+                    {sheet_count} Sheets
+                </span>
+
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-
-    else:
-
-        st.info(
-            "Upload one or more Excel files to start."
-        )
 
     st.divider()
 
@@ -788,6 +759,10 @@ with st.sidebar:
     ):
 
         st.session_state.projects = {}
+
+        st.session_state.selected_project = None
+
+        st.session_state.selected_sheet = None
 
         st.rerun()
 
@@ -799,127 +774,165 @@ with st.sidebar:
         st.rerun()
 
 # =========================================================
-# NO PROJECT
-# =========================================================
-
-if not st.session_state.projects:
-
-    st.markdown(
-        """
-        <div class="info-box">
-            <b>Welcome.</b><br>
-            Upload Excel files from the sidebar.
-            Each Excel file will automatically become a Project.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.stop()
-
-# =========================================================
 # PROJECT FILTER
 # =========================================================
-
-st.markdown(
-    '<div class="section-title">🔎 Filters</div>',
-    unsafe_allow_html=True
-)
 
 project_names = sorted(
     st.session_state.projects.keys()
 )
 
-project_options = [
-    "All Projects"
-] + project_names
+st.markdown(
+    '<div class="section-title">🏗️ Select Project</div>',
+    unsafe_allow_html=True
+)
 
 selected_project = st.selectbox(
     "Project",
-    project_options,
-    key="project_filter"
+    project_names,
+    key="project_selector"
+)
+
+st.session_state.selected_project = (
+    selected_project
 )
 
 # =========================================================
-# COMBINE SELECTED PROJECTS
+# GET PROJECT SHEETS
 # =========================================================
 
-if selected_project == "All Projects":
-
-    project_frames = []
-
-    for project_name in project_names:
-
-        project_data = st.session_state.projects[
-            project_name
-        ]["data"].copy()
-
-        if project_data.empty:
-            continue
-
-        project_data.insert(
-            0,
-            "Project",
-            project_name
-        )
-
-        project_frames.append(
-            project_data
-        )
-
-    if project_frames:
-
-        df = pd.concat(
-            project_frames,
-            ignore_index=True,
-            sort=False
-        )
-
-    else:
-
-        df = pd.DataFrame()
-
-else:
-
-    df = st.session_state.projects[
+project_info = (
+    st.session_state.projects[
         selected_project
-    ]["data"].copy()
+    ]
+)
 
-    if not df.empty:
+project_sheets = project_info[
+    "sheets"
+]
 
-        df.insert(
-            0,
-            "Project",
-            selected_project
-        )
-
-# =========================================================
-# CHECK DATA
-# =========================================================
-
-if df.empty:
+if not project_sheets:
 
     st.warning(
-        "The selected project does not contain readable data."
+        "No readable sheets found in this project."
     )
 
     st.stop()
 
 # =========================================================
-# PR DETECTION
+# SHEET BUTTONS
 # =========================================================
 
-pr_column = find_pr_column(
-    df
+st.markdown(
+    '<div class="section-title">📑 Project Sections</div>',
+    unsafe_allow_html=True
+)
+
+sheet_names = list(
+    project_sheets.keys()
+)
+
+# If selected sheet doesn't exist
+if (
+    st.session_state.selected_sheet
+    not in sheet_names
+):
+
+    st.session_state.selected_sheet = (
+        sheet_names[0]
+    )
+
+# Create buttons in rows
+buttons_per_row = 4
+
+for start in range(
+    0,
+    len(sheet_names),
+    buttons_per_row
+):
+
+    row_sheets = sheet_names[
+        start:
+        start + buttons_per_row
+    ]
+
+    columns = st.columns(
+        len(row_sheets)
+    )
+
+    for index, sheet_name in enumerate(
+        row_sheets
+    ):
+
+        with columns[index]:
+
+            is_selected = (
+                st.session_state.selected_sheet
+                == sheet_name
+            )
+
+            button_label = (
+                f"✅ {sheet_name}"
+                if is_selected
+                else f"📄 {sheet_name}"
+            )
+
+            if st.button(
+                button_label,
+                key=f"sheet_button_{selected_project}_{sheet_name}",
+                use_container_width=True
+            ):
+
+                st.session_state.selected_sheet = (
+                    sheet_name
+                )
+
+                st.rerun()
+
+# =========================================================
+# SELECTED SHEET
+# =========================================================
+
+selected_sheet = (
+    st.session_state.selected_sheet
+)
+
+df = project_sheets[
+    selected_sheet
+].copy()
+
+# =========================================================
+# SHEET INFORMATION
+# =========================================================
+
+st.markdown(
+    f"""
+    <div class="info-box">
+        <b>Project:</b> {selected_project}
+        &nbsp;&nbsp; | &nbsp;&nbsp;
+        <b>Sheet:</b> {selected_sheet}
+        &nbsp;&nbsp; | &nbsp;&nbsp;
+        <b>Records:</b> {len(df):,}
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 # =========================================================
 # PR FILTER
 # =========================================================
 
+pr_column = find_pr_column(
+    df
+)
+
 selected_pr = "All PRs"
 
 if pr_column:
+
+    st.markdown(
+        '<div class="section-title">🔎 PR Filter</div>',
+        unsafe_allow_html=True
+    )
 
     pr_values = (
         df[pr_column]
@@ -943,13 +956,14 @@ if pr_column:
     selected_pr = st.selectbox(
         f"PR ({pr_column})",
         pr_options,
-        key="pr_filter"
+        key=f"pr_filter_{selected_project}_{selected_sheet}"
     )
 
 else:
 
     st.info(
-        "No PR column was detected in this project."
+        f"No PR column found in sheet: "
+        f"{selected_sheet}"
     )
 
 # =========================================================
@@ -964,89 +978,22 @@ if (
 ):
 
     filtered_df = filtered_df[
-        filtered_df[pr_column]
+        filtered_df[
+            pr_column
+        ]
         .astype(str)
         .str.strip()
-        == selected_pr
+        ==
+        selected_pr
     ].copy()
-
-# =========================================================
-# DYNAMIC FILTERS
-# =========================================================
-
-excluded_columns = {
-    "Project",
-    "_Source Sheet"
-}
-
-if pr_column:
-    excluded_columns.add(
-        pr_column
-    )
-
-dynamic_filters = get_dynamic_filter_columns(
-    filtered_df,
-    excluded_columns
-)
-
-if dynamic_filters:
-
-    st.markdown(
-        "### Additional Filters"
-    )
-
-    filter_columns = st.columns(
-        min(4, len(dynamic_filters))
-    )
-
-    for index, column in enumerate(
-        dynamic_filters
-    ):
-
-        unique_values = (
-            filtered_df[column]
-            .dropna()
-            .astype(str)
-            .str.strip()
-        )
-
-        unique_values = unique_values[
-            unique_values != ""
-        ]
-
-        values = sorted(
-            unique_values.unique().tolist()
-        )
-
-        if not values:
-            continue
-
-        with filter_columns[
-            index % len(filter_columns)
-        ]:
-
-            selected_value = st.selectbox(
-                column,
-                ["All"] + values,
-                key=f"dynamic_filter_{column}"
-            )
-
-            if selected_value != "All":
-
-                filtered_df = filtered_df[
-                    filtered_df[column]
-                    .astype(str)
-                    .str.strip()
-                    == selected_value
-                ].copy()
 
 # =========================================================
 # SEARCH
 # =========================================================
 
 search_text = st.text_input(
-    "🔍 Search",
-    placeholder="Search in the displayed data..."
+    "🔍 Search in this sheet",
+    placeholder="Type to search..."
 )
 
 if search_text:
@@ -1135,16 +1082,23 @@ quantity_column = find_numeric_column(
 # KPI CALCULATIONS
 # =========================================================
 
-records_count = len(filtered_df)
+records_count = len(
+    filtered_df
+)
 
 if pr_column:
 
     prs_count = (
-        filtered_df[pr_column]
+        filtered_df[
+            pr_column
+        ]
         .dropna()
         .astype(str)
         .str.strip()
-        .replace("", np.nan)
+        .replace(
+            "",
+            np.nan
+        )
         .nunique()
     )
 
@@ -1152,10 +1106,12 @@ else:
 
     prs_count = 0
 
+
 budget_value = 0
 planned_value = 0
 actual_value = 0
 quantity_value = 0
+
 
 if budget_column:
 
@@ -1164,12 +1120,14 @@ if budget_column:
         budget_column
     ).sum()
 
+
 if planned_column:
 
     planned_value = numeric_series(
         filtered_df,
         planned_column
     ).sum()
+
 
 if actual_column:
 
@@ -1178,6 +1136,7 @@ if actual_column:
         actual_column
     ).sum()
 
+
 if quantity_column:
 
     quantity_value = numeric_series(
@@ -1185,25 +1144,34 @@ if quantity_column:
         quantity_column
     ).sum()
 
-# Remaining
+
 remaining_value = 0
 
-if budget_column and actual_column:
+
+if (
+    budget_column
+    and actual_column
+):
 
     remaining_value = (
         budget_value
-        - actual_value
+        -
+        actual_value
     )
 
-elif planned_column and actual_column:
+elif (
+    planned_column
+    and actual_column
+):
 
     remaining_value = (
         planned_value
-        - actual_value
+        -
+        actual_value
     )
 
 # =========================================================
-# KPI SECTION
+# KPIs
 # =========================================================
 
 st.markdown(
@@ -1211,59 +1179,64 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-kpi_columns = st.columns(7)
+kpis = st.columns(6)
 
-with kpi_columns[0]:
+with kpis[0]:
 
     show_kpi(
         "Records",
-        format_number(records_count)
+        format_number(
+            records_count
+        )
     )
 
-with kpi_columns[1]:
+with kpis[1]:
 
     show_kpi(
         "PRs",
-        format_number(prs_count)
+        format_number(
+            prs_count
+        )
     )
 
-with kpi_columns[2]:
+with kpis[2]:
 
     show_kpi(
         "Budget",
-        format_currency(budget_value)
+        format_currency(
+            budget_value
+        )
     )
 
-with kpi_columns[3]:
+with kpis[3]:
 
     show_kpi(
         "Planned",
-        format_currency(planned_value)
+        format_currency(
+            planned_value
+        )
     )
 
-with kpi_columns[4]:
+with kpis[4]:
 
     show_kpi(
         "Actual",
-        format_currency(actual_value)
+        format_currency(
+            actual_value
+        )
     )
 
-with kpi_columns[5]:
-
-    show_kpi(
-        "Remaining",
-        format_currency(remaining_value)
-    )
-
-with kpi_columns[6]:
+with kpis[5]:
 
     show_kpi(
         "Quantity",
-        format_number(quantity_value)
+        format_number(
+            quantity_value
+        )
     )
 
 # =========================================================
-# CURRENT FILTER SUMMARY
+# CURRENT SELECTION
 # =========================================================
 
 st.markdown(
@@ -1271,181 +1244,78 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-summary_col1, summary_col2, summary_col3 = st.columns(3)
+selection_1, selection_2, selection_3 = st.columns(3)
 
-with summary_col1:
+with selection_1:
 
-    if selected_project == "All Projects":
-        st.metric(
-            "Project",
-            "All Projects"
-        )
-    else:
-        st.metric(
-            "Project",
-            selected_project
-        )
+    st.metric(
+        "Project",
+        selected_project
+    )
 
-with summary_col2:
+with selection_2:
+
+    st.metric(
+        "Sheet",
+        selected_sheet
+    )
+
+with selection_3:
 
     st.metric(
         "PR",
         selected_pr
     )
 
-with summary_col3:
-
-    st.metric(
-        "Displayed Records",
-        f"{len(filtered_df):,}"
-    )
-
 # =========================================================
 # PR SUMMARY
 # =========================================================
 
-if pr_column and selected_pr == "All PRs":
+if (
+    pr_column
+    and selected_pr == "All PRs"
+    and not filtered_df.empty
+):
 
     st.markdown(
         '<div class="section-title">📋 PR Summary</div>',
         unsafe_allow_html=True
     )
 
-    summary_df = filtered_df.copy()
-
-    summary_df["_PR_Display"] = (
-        summary_df[pr_column]
-        .astype(str)
-        .str.strip()
+    summary = (
+        filtered_df
+        .groupby(
+            pr_column,
+            dropna=False
+        )
+        .size()
+        .reset_index(
+            name="Records"
+        )
     )
 
-    summary_df = summary_df[
-        summary_df["_PR_Display"]
-        .notna()
-    ]
+    summary = summary.rename(
+        columns={
+            pr_column: "PR"
+        }
+    )
 
-    group_columns = [
-        "_PR_Display"
-    ]
-
-    aggregation = {}
-
-    if budget_column:
-        aggregation[
-            budget_column
-        ] = "sum"
-
-    if planned_column:
-        aggregation[
-            planned_column
-        ] = "sum"
-
-    if actual_column:
-        aggregation[
-            actual_column
-        ] = "sum"
-
-    if quantity_column:
-        aggregation[
-            quantity_column
-        ] = "sum"
-
-    aggregation[
-        "_PR_Display"
-    ] = "size"
-
-    if aggregation:
-
-        pr_summary = (
-            summary_df
-            .groupby("_PR_Display")
-            .agg(aggregation)
-            .reset_index()
-        )
-
-        # Remove duplicate column generated by aggregation
-        if "_PR_Display" in pr_summary.columns:
-
-            pr_summary = pr_summary.rename(
-                columns={
-                    "_PR_Display": "PR"
-                }
-            )
-
-        if "_PR_Display" in pr_summary.columns:
-
-            pr_summary = pr_summary.drop(
-                columns=["_PR_Display"]
-            )
-
-        # Rename count if generated
-        if "_PR_Display" in pr_summary.columns:
-            pr_summary = pr_summary.rename(
-                columns={
-                    "_PR_Display": "Records"
-                }
-            )
-
-        # Better clean summary
-        pr_summary = pr_summary.rename(
-            columns={
-                budget_column: "Budget"
-                if budget_column
-                else budget_column,
-                planned_column: "Planned"
-                if planned_column
-                else planned_column,
-                actual_column: "Actual"
-                if actual_column
-                else actual_column,
-                quantity_column: "Quantity"
-                if quantity_column
-                else quantity_column
-            }
-        )
-
-        # Recalculate PR records
-        record_counts = (
-            summary_df
-            .groupby("_PR_Display")
-            .size()
-            .reset_index(
-                name="Records"
-            )
-            .rename(
-                columns={
-                    "_PR_Display": "PR"
-                }
-            )
-        )
-
-        pr_summary = (
-            pr_summary
-            .drop(
-                columns=["Records"],
-                errors="ignore"
-            )
-            .merge(
-                record_counts,
-                on="PR",
-                how="left"
-            )
-        )
-
-        st.dataframe(
-            clean_dataframe_for_display(
-                pr_summary
-            ),
-            use_container_width=True,
-            hide_index=True
-        )
+    st.dataframe(
+        summary,
+        use_container_width=True,
+        hide_index=True
+    )
 
 # =========================================================
-# MAIN DATA TABLE
+# MAIN TABLE
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">📄 Project Data</div>',
+    f"""
+    <div class="section-title">
+        📄 {selected_sheet} Data
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -1476,11 +1346,13 @@ csv_data = filtered_df.to_csv(
 )
 
 st.download_button(
-    label="⬇️ Download Current Data as CSV",
+    label="⬇️ Download Current Sheet",
     data=csv_data,
-    file_name="filtered_project_data.csv",
-    mime="text/csv",
-    use_container_width=False
+    file_name=(
+        f"{selected_project}_"
+        f"{selected_sheet}.csv"
+    ),
+    mime="text/csv"
 )
 
 # =========================================================
@@ -1497,7 +1369,8 @@ st.markdown(
         color:{GRAY};
         font-size:12px;
     ">
-        {COMPANY} | Construction Projects & PR Dashboard
+        {COMPANY} |
+        Construction Projects Dashboard
     </div>
     """,
     unsafe_allow_html=True
