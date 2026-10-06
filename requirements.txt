@@ -4,7 +4,10 @@ openpyxl>=3.1
 plotly>=5.20
 streamlit
 pandas
-plotly
-gspread
-google-auth
+numpy
 openpyxl
+xlrd
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
