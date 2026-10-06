@@ -31,7 +31,7 @@ ORANGE = "#D97706"
 BORDER = "#E1E4E8"
 
 # =========================================================
-# CUSTOM CSS
+# CSS
 # =========================================================
 
 st.markdown(
@@ -69,28 +69,6 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    .kpi-card {{
-        background: white;
-        border: 1px solid {BORDER};
-        border-radius: 12px;
-        padding: 18px;
-        min-height: 105px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }}
-
-    .kpi-title {{
-        color: {GRAY};
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }}
-
-    .kpi-value {{
-        color: {DARK};
-        font-size: 25px;
-        font-weight: 700;
-    }}
-
     </style>
     """,
     unsafe_allow_html=True
@@ -115,11 +93,17 @@ if "selected_sheet" not in st.session_state:
 # =========================================================
 
 def clean_column_name(column):
+
     if column is None:
         return ""
 
     column = str(column).strip()
-    column = re.sub(r"\s+", " ", column)
+
+    column = re.sub(
+        r"\s+",
+        " ",
+        column
+    )
 
     return column
 
@@ -154,7 +138,10 @@ def make_unique_columns(columns):
 
 def pretty_project_name(filename):
 
-    name = filename.rsplit(".", 1)[0]
+    name = filename.rsplit(
+        ".",
+        1
+    )[0]
 
     name = re.sub(
         r"[_\-]+",
@@ -175,8 +162,14 @@ def file_hash(uploaded_file):
 
     content = uploaded_file.getvalue()
 
-    return hashlib.md5(content).hexdigest()
+    return hashlib.md5(
+        content
+    ).hexdigest()
 
+
+# =========================================================
+# HEADER DETECTION
+# =========================================================
 
 def detect_header_row(raw_df):
 
@@ -191,7 +184,9 @@ def detect_header_row(raw_df):
     best_row = 0
     best_score = -1
 
-    for i in range(max_rows_to_check):
+    for i in range(
+        max_rows_to_check
+    ):
 
         row = raw_df.iloc[i]
 
@@ -219,7 +214,10 @@ def detect_header_row(raw_df):
             "cost",
             "date",
             "status",
-            "description"
+            "description",
+            "delivery",
+            "unit",
+            "price"
         ]
 
         for value in values:
@@ -229,6 +227,7 @@ def detect_header_row(raw_df):
             for keyword in keywords:
 
                 if keyword in value_lower:
+
                     score += 2
 
         if score > best_score:
@@ -238,6 +237,10 @@ def detect_header_row(raw_df):
 
     return best_row
 
+
+# =========================================================
+# READ EXCEL SHEET
+# =========================================================
 
 def read_excel_sheet(
     excel_bytes,
@@ -253,6 +256,7 @@ def read_excel_sheet(
         )
 
         if raw.empty:
+
             return pd.DataFrame()
 
         header_row = detect_header_row(
@@ -297,6 +301,10 @@ def read_excel_sheet(
         return pd.DataFrame()
 
 
+# =========================================================
+# LOAD EXCEL
+# =========================================================
+
 def load_excel_file(excel_bytes):
 
     sheets = {}
@@ -316,7 +324,9 @@ def load_excel_file(excel_bytes):
 
             if not df.empty:
 
-                sheets[sheet_name] = df
+                sheets[
+                    sheet_name
+                ] = df
 
     except Exception as e:
 
@@ -327,27 +337,44 @@ def load_excel_file(excel_bytes):
     return sheets
 
 
+# =========================================================
+# PR COLUMN DETECTION
+# =========================================================
+
 def find_pr_column(df):
 
     if df is None or df.empty:
+
         return None
 
-    columns = list(df.columns)
+    columns = list(
+        df.columns
+    )
 
     exact_candidates = [
+
         "PR",
+
         "PR Number",
+
         "PR No",
+
         "PR No.",
+
         "PR#",
+
         "Purchase Requisition",
+
         "Purchase Requisition Number",
+
         "Purchase Requisition No",
+
         "Requisition Number",
+
         "Requisition No"
     ]
 
-    # Exact match first
+    # Exact match
     for candidate in exact_candidates:
 
         for col in columns:
@@ -362,7 +389,7 @@ def find_pr_column(df):
 
                 return col
 
-    # Additional matching
+    # Partial match
     for col in columns:
 
         col_text = (
@@ -375,25 +402,81 @@ def find_pr_column(df):
             r"pr",
             col_text
         ):
+
             return col
 
         if re.search(
             r"\bpr\s*(number|no|no\.)\b",
             col_text
         ):
+
             return col
 
-        if "purchase requisition" in col_text:
+        if (
+            "purchase requisition"
+            in col_text
+        ):
+
             return col
 
-        if "requisition number" in col_text:
+        if (
+            "requisition number"
+            in col_text
+        ):
+
             return col
 
-        if "requisition no" in col_text:
+        if (
+            "requisition no"
+            in col_text
+        ):
+
             return col
 
     return None
 
+
+# =========================================================
+# SHEET NAME PR DETECTION
+# =========================================================
+
+def is_pr_sheet(sheet_name):
+
+    if sheet_name is None:
+
+        return False
+
+    name = str(
+        sheet_name
+    ).strip()
+
+    patterns = [
+
+        r"^PR[-_\s]?\d+$",
+
+        r"^PR\s*[-_]\s*\d+$",
+
+        r"^Purchase\s*Requisition",
+
+        r"^Requisition\s*[-_#]?\s*\d+$"
+    ]
+
+    for pattern in patterns:
+
+        if re.search(
+            pattern,
+            name,
+            re.IGNORECASE
+        ):
+
+            return True
+
+    return False
+
+
+# =========================================================
+# NUMERIC FUNCTIONS
+# =========================================================
 
 def numeric_series(
     df,
@@ -409,7 +492,9 @@ def numeric_series(
             dtype=float
         )
 
-    series = df[column]
+    series = df[
+        column
+    ]
 
     if pd.api.types.is_numeric_dtype(
         series
@@ -458,9 +543,12 @@ def find_numeric_column(
 ):
 
     if df.empty:
+
         return None
 
-    columns = list(df.columns)
+    columns = list(
+        df.columns
+    )
 
     # Exact match
     for candidate in candidates:
@@ -481,18 +569,27 @@ def find_numeric_column(
                 )
 
                 if test.notna().sum() > 0:
+
                     return col
 
     # Partial match
     for candidate in candidates:
 
-        candidate_lower = candidate.lower()
+        candidate_lower = (
+            candidate.lower()
+        )
 
         for col in columns:
 
-            col_lower = str(col).lower()
+            col_lower = (
+                str(col)
+                .lower()
+            )
 
-            if candidate_lower in col_lower:
+            if (
+                candidate_lower
+                in col_lower
+            ):
 
                 test = numeric_series(
                     df,
@@ -500,21 +597,28 @@ def find_numeric_column(
                 )
 
                 if test.notna().sum() > 0:
+
                     return col
 
     return None
 
+
+# =========================================================
+# FORMATTING
+# =========================================================
 
 def format_number(value):
 
     try:
 
         if pd.isna(value):
+
             return "0"
 
         value = float(value)
 
         if value.is_integer():
+
             return f"{int(value):,}"
 
         return f"{value:,.2f}"
@@ -529,6 +633,7 @@ def format_currency(value):
     try:
 
         if pd.isna(value):
+
             return "0"
 
         return f"{float(value):,.2f}"
@@ -538,30 +643,28 @@ def format_currency(value):
         return "0"
 
 
+# =========================================================
+# KPI
+# =========================================================
+
 def show_kpi(
     title,
     value
 ):
 
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-
-            <div class="kpi-title">
-                {title}
-            </div>
-
-            <div class="kpi-value">
-                {value}
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.metric(
+        label=title,
+        value=value
     )
 
 
-def clean_dataframe_for_display(df):
+# =========================================================
+# DATA DISPLAY
+# =========================================================
+
+def clean_dataframe_for_display(
+    df
+):
 
     result = df.copy()
 
@@ -581,11 +684,16 @@ def clean_dataframe_for_display(df):
     return result
 
 
+# =========================================================
+# REGISTER FILES
+# =========================================================
+
 def register_uploaded_files(
     uploaded_files
 ):
 
     if not uploaded_files:
+
         return
 
     for uploaded_file in uploaded_files:
@@ -597,6 +705,7 @@ def register_uploaded_files(
             )
 
             if not file_bytes:
+
                 continue
 
             project_name = (
@@ -610,16 +719,20 @@ def register_uploaded_files(
             )
 
             existing = (
-                st.session_state.projects.get(
+                st.session_state
+                .projects
+                .get(
                     project_name
                 )
             )
 
-            # Same file already loaded
             if (
                 existing
-                and existing.get("hash")
-                == unique_hash
+                and existing.get(
+                    "hash"
+                )
+                ==
+                unique_hash
             ):
 
                 continue
@@ -711,11 +824,14 @@ with st.sidebar:
         )
 
         for project_name in sorted(
-            st.session_state.projects.keys()
+            st.session_state
+            .projects
+            .keys()
         ):
 
             project_info = (
-                st.session_state.projects[
+                st.session_state
+                .projects[
                     project_name
                 ]
             )
@@ -727,28 +843,12 @@ with st.sidebar:
                 )
             )
 
-            st.markdown(
-                f"""
-                <div style="
-                    padding:8px;
-                    border-bottom:
-                    1px solid {BORDER};
-                ">
+            st.write(
+                f"🏗️ **{project_name}**"
+            )
 
-                <b>🏗️ {project_name}</b>
-
-                <br>
-
-                <span style="
-                    color:{GRAY};
-                    font-size:12px;
-                ">
-                    {sheet_count} Sheets
-                </span>
-
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.caption(
+                f"{sheet_count} Sheets"
             )
 
     else:
@@ -785,7 +885,9 @@ with st.sidebar:
 # =========================================================
 
 project_names = sorted(
-    st.session_state.projects.keys()
+    st.session_state
+    .projects
+    .keys()
 )
 
 if not project_names:
@@ -802,13 +904,15 @@ if not project_names:
 # =========================================================
 
 if (
-    st.session_state.selected_project
+    st.session_state
+    .selected_project
     not in project_names
 ):
 
     st.session_state.selected_project = (
         project_names[0]
     )
+
 
 st.markdown(
     '<div class="section-title">🏗️ Select Project</div>',
@@ -819,7 +923,8 @@ selected_project = st.selectbox(
     "Project",
     project_names,
     index=project_names.index(
-        st.session_state.selected_project
+        st.session_state
+        .selected_project
     ),
     key="project_selector"
 )
@@ -830,30 +935,18 @@ st.session_state.selected_project = (
 
 
 # =========================================================
-# SAFE PROJECT ACCESS
+# PROJECT ACCESS
 # =========================================================
 
-if (
-    selected_project
-    not in st.session_state.projects
-):
-
-    st.warning(
-        "Selected project is not available."
+project_info = (
+    st.session_state
+    .projects
+    .get(
+        selected_project
     )
-
-    st.session_state.selected_project = (
-        project_names[0]
-    )
-
-    st.rerun()
-
-
-project_info = st.session_state.projects.get(
-    selected_project
 )
 
-if not project_info:
+if project_info is None:
 
     st.warning(
         "Project data could not be loaded."
@@ -862,13 +955,12 @@ if not project_info:
     st.stop()
 
 
-# =========================================================
-# GET SHEETS
-# =========================================================
-
-project_sheets = project_info.get(
-    "sheets",
-    {}
+project_sheets = (
+    project_info
+    .get(
+        "sheets",
+        {}
+    )
 )
 
 if not project_sheets:
@@ -891,7 +983,8 @@ sheet_names = list(
 # =========================================================
 
 if (
-    st.session_state.selected_sheet
+    st.session_state
+    .selected_sheet
     not in sheet_names
 ):
 
@@ -933,29 +1026,39 @@ for start in range(
         with columns[index]:
 
             is_selected = (
-                st.session_state.selected_sheet
-                == sheet_name
+                st.session_state
+                .selected_sheet
+                ==
+                sheet_name
             )
 
             if is_selected:
 
-                label = (
+                button_label = (
                     f"✅ {sheet_name}"
                 )
 
             else:
 
-                label = (
+                button_label = (
                     f"📄 {sheet_name}"
                 )
 
             if st.button(
-                label,
+                button_label,
                 key=(
                     "sheet_button_"
-                    + str(hash(selected_project))
+                    + str(
+                        hash(
+                            selected_project
+                        )
+                    )
                     + "_"
-                    + str(hash(sheet_name))
+                    + str(
+                        hash(
+                            sheet_name
+                        )
+                    )
                 ),
                 use_container_width=True
             ):
@@ -972,10 +1075,14 @@ for start in range(
 # =========================================================
 
 selected_sheet = (
-    st.session_state.selected_sheet
+    st.session_state
+    .selected_sheet
 )
 
-if selected_sheet not in project_sheets:
+if (
+    selected_sheet
+    not in project_sheets
+):
 
     selected_sheet = sheet_names[0]
 
@@ -990,35 +1097,43 @@ df = project_sheets[
 
 
 # =========================================================
-# SHEET INFO
+# PROJECT / SHEET / RECORD INFO
 # =========================================================
 
-st.markdown(
-    f"""
-    <div style="
-        background:{LIGHT};
-        padding:12px 15px;
-        border-radius:8px;
-        margin-top:15px;
-        margin-bottom:15px;
-    ">
+info1, info2, info3 = st.columns(3)
 
-        <b>Project:</b>
-        {selected_project}
+with info1:
 
-        &nbsp;&nbsp; | &nbsp;&nbsp;
+    st.info(
+        f"🏗️ **Project**\n\n"
+        f"{selected_project}"
+    )
 
-        <b>Sheet:</b>
-        {selected_sheet}
+with info2:
 
-        &nbsp;&nbsp; | &nbsp;&nbsp;
+    st.info(
+        f"📄 **Sheet**\n\n"
+        f"{selected_sheet}"
+    )
 
-        <b>Records:</b>
-        {len(df):,}
+with info3:
 
-    </div>
-    """,
-    unsafe_allow_html=True
+    st.info(
+        f"📊 **Records**\n\n"
+        f"{len(df):,}"
+    )
+
+
+# =========================================================
+# DETECT PR
+# =========================================================
+
+pr_column = find_pr_column(
+    df
+)
+
+sheet_is_pr = is_pr_sheet(
+    selected_sheet
 )
 
 
@@ -1026,13 +1141,33 @@ st.markdown(
 # PR FILTER
 # =========================================================
 
-pr_column = find_pr_column(
-    df
-)
-
 selected_pr = "All PRs"
 
-if pr_column:
+
+if sheet_is_pr:
+
+    # -----------------------------------------------------
+    # Sheet name itself is the PR
+    # Example: PR-0007
+    # -----------------------------------------------------
+
+    st.markdown(
+        '<div class="section-title">🔎 PR</div>',
+        unsafe_allow_html=True
+    )
+
+    selected_pr = selected_sheet
+
+    st.info(
+        f"Selected PR: **{selected_pr}**"
+    )
+
+
+elif pr_column:
+
+    # -----------------------------------------------------
+    # PR exists as a column
+    # -----------------------------------------------------
 
     st.markdown(
         '<div class="section-title">🔎 PR Filter</div>',
@@ -1040,7 +1175,9 @@ if pr_column:
     )
 
     pr_values = (
-        df[pr_column]
+        df[
+            pr_column
+        ]
         .dropna()
         .astype(str)
         .str.strip()
@@ -1051,7 +1188,9 @@ if pr_column:
     ]
 
     unique_prs = sorted(
-        pr_values.unique().tolist()
+        pr_values
+        .unique()
+        .tolist()
     )
 
     pr_options = [
@@ -1063,16 +1202,25 @@ if pr_column:
         pr_options,
         key=(
             "pr_filter_"
-            + str(hash(selected_project))
+            + str(
+                hash(
+                    selected_project
+                )
+            )
             + "_"
-            + str(hash(selected_sheet))
+            + str(
+                hash(
+                    selected_sheet
+                )
+            )
         )
     )
 
+
 else:
 
-    st.info(
-        "This sheet does not contain a PR column."
+    st.caption(
+        "No PR field was detected in this sheet."
     )
 
 
@@ -1082,8 +1230,10 @@ else:
 
 filtered_df = df.copy()
 
+
 if (
     pr_column
+    and not sheet_is_pr
     and selected_pr != "All PRs"
 ):
 
@@ -1109,9 +1259,17 @@ search_text = st.text_input(
     ),
     key=(
         "search_"
-        + str(hash(selected_project))
+        + str(
+            hash(
+                selected_project
+            )
+        )
         + "_"
-        + str(hash(selected_sheet))
+        + str(
+            hash(
+                selected_sheet
+            )
+        )
     )
 )
 
@@ -1133,7 +1291,9 @@ if search_text:
                 mask = (
                     mask
                     |
-                    filtered_df[col]
+                    filtered_df[
+                        col
+                    ]
                     .astype(str)
                     .str.contains(
                         search_text,
@@ -1144,6 +1304,7 @@ if search_text:
                 )
 
             except Exception:
+
                 pass
 
         filtered_df = filtered_df[
@@ -1207,7 +1368,12 @@ records_count = len(
     filtered_df
 )
 
-if pr_column:
+
+if sheet_is_pr:
+
+    prs_count = 1
+
+elif pr_column:
 
     prs_count = (
         filtered_df[
@@ -1266,29 +1432,6 @@ if quantity_column:
     ).sum()
 
 
-remaining_value = 0
-
-if (
-    budget_column
-    and actual_column
-):
-
-    remaining_value = (
-        budget_value
-        - actual_value
-    )
-
-elif (
-    planned_column
-    and actual_column
-):
-
-    remaining_value = (
-        planned_value
-        - actual_value
-    )
-
-
 # =========================================================
 # KPI SECTION
 # =========================================================
@@ -1300,6 +1443,7 @@ st.markdown(
 
 kpi_columns = st.columns(6)
 
+
 with kpi_columns[0]:
 
     show_kpi(
@@ -1308,6 +1452,7 @@ with kpi_columns[0]:
             records_count
         )
     )
+
 
 with kpi_columns[1]:
 
@@ -1318,6 +1463,7 @@ with kpi_columns[1]:
         )
     )
 
+
 with kpi_columns[2]:
 
     show_kpi(
@@ -1326,6 +1472,7 @@ with kpi_columns[2]:
             budget_value
         )
     )
+
 
 with kpi_columns[3]:
 
@@ -1336,6 +1483,7 @@ with kpi_columns[3]:
         )
     )
 
+
 with kpi_columns[4]:
 
     show_kpi(
@@ -1344,6 +1492,7 @@ with kpi_columns[4]:
             actual_value
         )
     )
+
 
 with kpi_columns[5]:
 
@@ -1364,67 +1513,30 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-col1, col2, col3 = st.columns(3)
+selection1, selection2, selection3 = st.columns(3)
 
-with col1:
+
+with selection1:
 
     st.metric(
         "Project",
         selected_project
     )
 
-with col2:
+
+with selection2:
 
     st.metric(
         "Sheet",
         selected_sheet
     )
 
-with col3:
+
+with selection3:
 
     st.metric(
         "PR",
         selected_pr
-    )
-
-
-# =========================================================
-# PR SUMMARY
-# =========================================================
-
-if (
-    pr_column
-    and selected_pr == "All PRs"
-    and not filtered_df.empty
-):
-
-    st.markdown(
-        '<div class="section-title">📋 PR Summary</div>',
-        unsafe_allow_html=True
-    )
-
-    summary = (
-        filtered_df
-        .groupby(
-            pr_column,
-            dropna=False
-        )
-        .size()
-        .reset_index(
-            name="Records"
-        )
-    )
-
-    summary = summary.rename(
-        columns={
-            pr_column: "PR"
-        }
-    )
-
-    st.dataframe(
-        summary,
-        use_container_width=True,
-        hide_index=True
     )
 
 
@@ -1441,10 +1553,11 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 if filtered_df.empty:
 
     st.warning(
-        "No data matches the current filters."
+        "No data found."
     )
 
 else:
