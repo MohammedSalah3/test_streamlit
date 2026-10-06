@@ -1,9 +1,14 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+
 from io import BytesIO
 import re
-import hashlib
+import json
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
 
 # =========================================================
@@ -18,30 +23,14 @@ st.set_page_config(
 
 
 # =========================================================
-# CSS
+# GOOGLE DRIVE CONFIG
 # =========================================================
 
-st.markdown("""
-<style>
+DRIVE_FOLDER_ID = "1V8-f6hDj7dEX6RImfDZi11FJvl6V1cvn"
 
-.main-title {
-    font-size: 30px;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.sub-title {
-    color: #666;
-    font-size: 15px;
-    margin-bottom: 25px;
-}
-
-.sheet-button {
-    margin-bottom: 10px;
-}
-
-</style>
-""", unsafe_allow_html=True)
+SCOPES = [
+    "https://www.googleapis.com/auth/drive.readonly"
+]
 
 
 # =========================================================
@@ -59,54 +48,202 @@ if "selected_sheet" not in st.session_state:
 
 
 # =========================================================
-# FUNCTIONS
+# CSS
 # =========================================================
 
-def clean_column_name(column):
+st.markdown(
+    """
+    <style>
 
-    if column is None:
-        return ""
+    .main-title {
+        font-size: 30px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
 
-    column = str(column).strip()
+    .sub-title {
+        color: #666666;
+        font-size: 15px;
+        margin-bottom: 25px;
+    }
 
-    column = re.sub(
-        r"\s+",
-        " ",
-        column
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# GOOGLE DRIVE AUTHENTICATION
+# =========================================================
+
+@st.cache_resource
+def get_drive_service():
+
+    try:
+
+        # ---------------------------------------------
+        # Streamlit Secrets
+        # ---------------------------------------------
+
+        service_account_info = dict(
+            st.secrets["gcp_service_account"]
+        )
+
+        credentials = (
+            service_account
+            .Credentials
+            .from_service_account_info(
+                service_account_info,
+                scopes=SCOPES
+            )
+        )
+
+        service = build(
+            "drive",
+            "v3",
+            credentials=credentials
+        )
+
+        return service
+
+    except Exception as e:
+
+        st.error(
+            "Google Drive authentication failed."
+        )
+
+        st.code(
+            str(e)
+        )
+
+        return None
+
+
+# =========================================================
+# LIST EXCEL FILES FROM GOOGLE DRIVE
+# =========================================================
+
+def get_drive_excel_files(service):
+
+    files = []
+
+    page_token = None
+
+    query = (
+        f"'{DRIVE_FOLDER_ID}' in parents "
+        "and trashed = false "
+        "and ("
+        "mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' "
+        "or "
+        "mimeType = 'application/vnd.ms-excel'"
+        ")"
     )
 
-    return column
+    try:
 
+        while True:
 
-def make_unique_columns(columns):
-
-    result = []
-    counts = {}
-
-    for col in columns:
-
-        col = clean_column_name(col)
-
-        if not col:
-            col = "Unnamed"
-
-        if col not in counts:
-
-            counts[col] = 0
-            result.append(col)
-
-        else:
-
-            counts[col] += 1
-
-            result.append(
-                f"{col}_{counts[col]}"
+            response = (
+                service.files()
+                .list(
+                    q=query,
+                    spaces="drive",
+                    fields=(
+                        "nextPageToken,"
+                        "files(id,name,mimeType,"
+                        "modifiedTime,size)"
+                    ),
+                    pageToken=page_token,
+                    pageSize=1000,
+                    orderBy="name"
+                )
+                .execute()
             )
 
-    return result
+            files.extend(
+                response.get(
+                    "files",
+                    []
+                )
+            )
+
+            page_token = response.get(
+                "nextPageToken"
+            )
+
+            if not page_token:
+                break
+
+        return files
+
+    except Exception as e:
+
+        st.error(
+            "Could not read files from Google Drive."
+        )
+
+        st.code(
+            str(e)
+        )
+
+        return []
 
 
-def project_name_from_file(filename):
+# =========================================================
+# DOWNLOAD FILE FROM GOOGLE DRIVE
+# =========================================================
+
+def download_drive_file(
+    service,
+    file_id
+):
+
+    try:
+
+        request = (
+            service.files()
+            .get(
+                fileId=file_id,
+                alt="media"
+            )
+        )
+
+        file_buffer = BytesIO()
+
+        downloader = MediaIoBaseDownload(
+            file_buffer,
+            request
+        )
+
+        done = False
+
+        while not done:
+
+            status, done = (
+                downloader.next_chunk()
+            )
+
+        file_buffer.seek(0)
+
+        return file_buffer.getvalue()
+
+    except Exception as e:
+
+        st.error(
+            f"Could not download file: {e}"
+        )
+
+        return None
+
+
+# =========================================================
+# CLEAN PROJECT NAME
+# =========================================================
+
+def project_name_from_file(
+    filename
+):
 
     name = filename.rsplit(
         ".",
@@ -128,198 +265,443 @@ def project_name_from_file(filename):
     return name.strip()
 
 
-def get_file_hash(uploaded_file):
-
-    return hashlib.md5(
-        uploaded_file.getvalue()
-    ).hexdigest()
-
-
 # =========================================================
-# READ EXCEL
+# CLEAN COLUMN NAMES
 # =========================================================
 
-def read_excel_file(uploaded_file):
+def clean_column_name(
+    column
+):
 
-    file_bytes = uploaded_file.getvalue()
+    if column is None:
+        return ""
 
-    excel = pd.ExcelFile(
-        BytesIO(file_bytes)
+    column = str(
+        column
+    ).strip()
+
+    column = re.sub(
+        r"\s+",
+        " ",
+        column
     )
+
+    return column
+
+
+def make_unique_columns(
+    columns
+):
+
+    result = []
+
+    counts = {}
+
+    for column in columns:
+
+        column = clean_column_name(
+            column
+        )
+
+        if not column:
+
+            column = "Unnamed"
+
+        if column not in counts:
+
+            counts[column] = 0
+
+            result.append(
+                column
+            )
+
+        else:
+
+            counts[column] += 1
+
+            result.append(
+                f"{column}_{counts[column]}"
+            )
+
+    return result
+
+
+# =========================================================
+# READ EXCEL FROM BYTES
+# =========================================================
+
+def read_excel_bytes(
+    file_bytes
+):
 
     sheets = {}
 
-    for sheet_name in excel.sheet_names:
+    try:
 
-        try:
-
-            df = pd.read_excel(
-                BytesIO(file_bytes),
-                sheet_name=sheet_name
-            )
-
-            # Remove completely empty rows
-            df = df.dropna(
-                how="all"
-            )
-
-            # Remove completely empty columns
-            df = df.dropna(
-                axis=1,
-                how="all"
-            )
-
-            df.columns = make_unique_columns(
-                df.columns
-            )
-
-            df = df.reset_index(
-                drop=True
-            )
-
-            sheets[sheet_name] = df
-
-        except Exception as e:
-
-            st.warning(
-                f"Could not read sheet "
-                f"{sheet_name}: {e}"
-            )
-
-    return sheets
-
-
-# =========================================================
-# REGISTER PROJECT
-# =========================================================
-
-def register_file(uploaded_file):
-
-    project_name = project_name_from_file(
-        uploaded_file.name
-    )
-
-    file_hash = get_file_hash(
-        uploaded_file
-    )
-
-    # Don't reload same file
-    if project_name in st.session_state.projects:
-
-        old_hash = (
-            st.session_state
-            .projects[project_name]
-            .get("hash")
+        excel = pd.ExcelFile(
+            BytesIO(file_bytes)
         )
 
-        if old_hash == file_hash:
-            return
+        for sheet_name in excel.sheet_names:
 
-    sheets = read_excel_file(
-        uploaded_file
-    )
+            try:
 
-    st.session_state.projects[
-        project_name
-    ] = {
+                df = pd.read_excel(
+                    BytesIO(file_bytes),
+                    sheet_name=sheet_name
+                )
 
-        "file_name": uploaded_file.name,
+                # Remove completely empty rows
+                df = df.dropna(
+                    how="all"
+                )
 
-        "hash": file_hash,
+                # Remove completely empty columns
+                df = df.dropna(
+                    axis=1,
+                    how="all"
+                )
 
-        "sheets": sheets
-    }
+                df.columns = (
+                    make_unique_columns(
+                        df.columns
+                    )
+                )
 
+                df = df.reset_index(
+                    drop=True
+                )
 
-# =========================================================
-# HEADER
-# =========================================================
+                sheets[
+                    sheet_name
+                ] = df
 
-st.markdown(
-    '<div class="main-title">'
-    'Hassan Allam Construction'
-    '</div>',
-    unsafe_allow_html=True
-)
+            except Exception as e:
 
-st.markdown(
-    '<div class="sub-title">'
-    'Construction Projects Dashboard'
-    '</div>',
-    unsafe_allow_html=True
-)
+                st.warning(
+                    f"Could not read "
+                    f"sheet '{sheet_name}': "
+                    f"{e}"
+                )
 
+        return sheets
 
-# =========================================================
-# SIDEBAR
-# =========================================================
+    except Exception as e:
 
-with st.sidebar:
-
-    st.header("📁 Projects")
-
-    uploaded_files = st.file_uploader(
-        "Upload Excel Files",
-        type=["xlsx", "xls"],
-        accept_multiple_files=True
-    )
-
-    # -----------------------------------------------------
-    # Register uploaded files
-    # -----------------------------------------------------
-
-    if uploaded_files:
-
-        for uploaded_file in uploaded_files:
-
-            register_file(
-                uploaded_file
-            )
-
-
-    # -----------------------------------------------------
-    # Existing projects
-    # -----------------------------------------------------
-
-    project_names = sorted(
-        st.session_state
-        .projects
-        .keys()
-    )
-
-    if project_names:
-
-        st.write(
-            f"Projects: {len(project_names)}"
+        st.error(
+            f"Could not read Excel file: {e}"
         )
 
-    else:
-
-        st.info(
-            "Upload an Excel file."
-        )
+        return {}
 
 
-    # -----------------------------------------------------
-    # Clear projects
-    # -----------------------------------------------------
+# =========================================================
+# LOAD PROJECTS FROM DRIVE
+# =========================================================
 
-    if st.button(
-        "🗑️ Clear Projects",
-        use_container_width=True
+def load_projects_from_drive(
+    service,
+    drive_files
+):
+
+    projects = {}
+
+    progress = st.progress(
+        0
+    )
+
+    total_files = len(
+        drive_files
+    )
+
+    for index, file_info in enumerate(
+        drive_files
     ):
 
-        st.session_state.projects = {}
+        file_id = file_info[
+            "id"
+        ]
 
-        st.session_state.selected_project = None
+        file_name = file_info[
+            "name"
+        ]
 
-        st.session_state.selected_sheet = None
+        # ---------------------------------------------
+        # Download
+        # ---------------------------------------------
 
-        st.rerun()
+        file_bytes = download_drive_file(
+            service,
+            file_id
+        )
+
+        if file_bytes is None:
+            continue
+
+        # ---------------------------------------------
+        # Project name
+        # ---------------------------------------------
+
+        project_name = (
+            project_name_from_file(
+                file_name
+            )
+        )
+
+        # ---------------------------------------------
+        # Read all sheets
+        # ---------------------------------------------
+
+        sheets = read_excel_bytes(
+            file_bytes
+        )
+
+        # ---------------------------------------------
+        # Store project
+        # ---------------------------------------------
+
+        projects[
+            project_name
+        ] = {
+
+            "file_id": file_id,
+
+            "file_name": file_name,
+
+            "modified_time":
+                file_info.get(
+                    "modifiedTime",
+                    ""
+                ),
+
+            "sheets": sheets
+        }
+
+        # ---------------------------------------------
+        # Progress
+        # ---------------------------------------------
+
+        if total_files > 0:
+
+            progress.progress(
+                (index + 1)
+                / total_files
+            )
+
+    progress.empty()
+
+    return projects
 
 
 # =========================================================
-# NO PROJECT
+# PR SHEET DETECTION
+# =========================================================
+
+def is_pr_sheet(
+    sheet_name
+):
+
+    pattern = (
+        r"^PR[-_\s]?\d+$"
+    )
+
+    return bool(
+        re.match(
+            pattern,
+            str(sheet_name).strip(),
+            re.IGNORECASE
+        )
+    )
+
+
+# =========================================================
+# FIND PR COLUMN
+# =========================================================
+
+def find_pr_column(
+    df
+):
+
+    if df.empty:
+        return None
+
+    candidates = [
+
+        "PR",
+
+        "PR Number",
+
+        "PR No",
+
+        "PR No.",
+
+        "PR#",
+
+        "Purchase Requisition",
+
+        "Purchase Requisition Number",
+
+        "Purchase Requisition No",
+
+        "Requisition Number",
+
+        "Requisition No"
+    ]
+
+    columns = list(
+        df.columns
+    )
+
+    # Exact match
+    for candidate in candidates:
+
+        for column in columns:
+
+            if (
+                str(column)
+                .strip()
+                .lower()
+                ==
+                candidate.lower()
+            ):
+
+                return column
+
+    # Partial match
+    for column in columns:
+
+        text = (
+            str(column)
+            .strip()
+            .lower()
+        )
+
+        if re.fullmatch(
+            r"pr",
+            text
+        ):
+
+            return column
+
+        if (
+            "purchase requisition"
+            in text
+        ):
+
+            return column
+
+        if (
+            "requisition number"
+            in text
+        ):
+
+            return column
+
+        if (
+            "requisition no"
+            in text
+        ):
+
+            return column
+
+    return None
+
+
+# =========================================================
+# MAIN HEADER
+# =========================================================
+
+st.markdown(
+    """
+    <div class="main-title">
+        Hassan Allam Construction
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="sub-title">
+        Construction Projects Dashboard
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# CONNECT TO GOOGLE DRIVE
+# =========================================================
+
+drive_service = get_drive_service()
+
+if drive_service is None:
+
+    st.stop()
+
+
+# =========================================================
+# DRIVE CONTROL
+# =========================================================
+
+col1, col2 = st.columns(
+    [5, 1]
+)
+
+with col1:
+
+    st.info(
+        "📁 Projects are loaded automatically "
+        "from the Google Drive folder."
+    )
+
+with col2:
+
+    refresh = st.button(
+        "🔄 Refresh",
+        use_container_width=True
+    )
+
+
+# =========================================================
+# LOAD DRIVE FILES
+# =========================================================
+
+drive_files = get_drive_excel_files(
+    drive_service
+)
+
+
+if not drive_files:
+
+    st.warning(
+        "No Excel files were found "
+        "inside the Google Drive folder."
+    )
+
+    st.stop()
+
+
+# =========================================================
+# LOAD PROJECTS
+# =========================================================
+
+with st.spinner(
+    "Loading projects from Google Drive..."
+):
+
+    projects = load_projects_from_drive(
+        drive_service,
+        drive_files
+    )
+
+
+st.session_state.projects = projects
+
+
+# =========================================================
+# PROJECT LIST
 # =========================================================
 
 project_names = sorted(
@@ -328,10 +710,11 @@ project_names = sorted(
     .keys()
 )
 
+
 if not project_names:
 
-    st.info(
-        "Please upload an Excel file to start."
+    st.warning(
+        "No projects could be loaded."
     )
 
     st.stop()
@@ -341,7 +724,10 @@ if not project_names:
 # PROJECT SELECTOR
 # =========================================================
 
-st.subheader("🏗️ Project")
+st.subheader(
+    "🏗️ Project"
+)
+
 
 if (
     st.session_state.selected_project
@@ -361,16 +747,17 @@ selected_project = st.selectbox(
     )
 )
 
+
 st.session_state.selected_project = (
     selected_project
 )
 
 
 # =========================================================
-# GET SELECTED PROJECT
+# SELECT PROJECT
 # =========================================================
 
-project_data = (
+project = (
     st.session_state
     .projects
     .get(
@@ -378,24 +765,27 @@ project_data = (
     )
 )
 
-if project_data is None:
+
+if project is None:
 
     st.error(
-        "Project not found."
+        "Project could not be found."
     )
 
     st.stop()
 
 
-sheets = project_data.get(
+sheets = project.get(
     "sheets",
     {}
 )
 
+
 if not sheets:
 
     st.warning(
-        "No sheets found in this project."
+        "This project does not contain "
+        "readable Excel sheets."
     )
 
     st.stop()
@@ -429,11 +819,10 @@ st.subheader(
 )
 
 st.caption(
-    "Select a sheet to display its data."
+    "Each button displays the data stored "
+    "inside that specific Excel sheet."
 )
 
-
-# 4 buttons per row
 
 buttons_per_row = 4
 
@@ -449,7 +838,7 @@ for row_start in range(
         row_start + buttons_per_row
     ]
 
-    cols = st.columns(
+    columns = st.columns(
         len(row_sheets)
     )
 
@@ -457,42 +846,35 @@ for row_start in range(
         row_sheets
     ):
 
-        with cols[i]:
+        with columns[i]:
 
-            # ------------------------------------------------
-            # Highlight selected sheet
-            # ------------------------------------------------
+            selected = (
+                st.session_state
+                .selected_sheet
+                ==
+                sheet_name
+            )
 
-            if (
-                st.session_state.selected_sheet
-                == sheet_name
-            ):
+            if selected:
 
-                label = (
+                button_text = (
                     f"✅ {sheet_name}"
                 )
 
             else:
 
-                label = (
+                button_text = (
                     f"📄 {sheet_name}"
                 )
 
-
-            # ------------------------------------------------
-            # BUTTON
-            # ------------------------------------------------
-
             if st.button(
-                label,
+                button_text,
                 key=(
-                    f"sheet_{row_start}_{i}"
+                    f"sheet_button_"
+                    f"{row_start}_{i}"
                 ),
                 use_container_width=True
             ):
-
-                # THIS is the important part:
-                # Button selects its own sheet
 
                 st.session_state.selected_sheet = (
                     sheet_name
@@ -506,30 +888,32 @@ for row_start in range(
 # =========================================================
 
 selected_sheet = (
-    st.session_state.selected_sheet
+    st.session_state
+    .selected_sheet
 )
 
 
 # =========================================================
-# GET DATA OF SELECTED SHEET ONLY
+# GET EXACT SHEET DATA
 # =========================================================
 
-selected_df = sheets.get(
+df = sheets.get(
     selected_sheet
 )
 
 
-if selected_df is None:
+if df is None:
 
     st.error(
-        "Could not find selected sheet data."
+        "The selected sheet could not be loaded."
     )
 
     st.stop()
 
 
-# Make a copy
-df = selected_df.copy()
+# IMPORTANT:
+# This DataFrame belongs ONLY to the selected sheet.
+df = df.copy()
 
 
 # =========================================================
@@ -543,7 +927,9 @@ st.subheader(
 )
 
 
-info1, info2, info3 = st.columns(3)
+info1, info2, info3 = st.columns(
+    3
+)
 
 
 with info1:
@@ -571,105 +957,28 @@ with info3:
 
 
 # =========================================================
-# PR DETECTION
+# PR INFORMATION
 # =========================================================
 
-def is_pr_sheet(sheet_name):
-
-    return bool(
-        re.match(
-            r"^PR[-_\s]?\d+$",
-            str(sheet_name).strip(),
-            re.IGNORECASE
-        )
-    )
-
-
-sheet_is_pr = is_pr_sheet(
+if is_pr_sheet(
     selected_sheet
-)
-
-
-# =========================================================
-# PR
-# =========================================================
-
-if sheet_is_pr:
+):
 
     st.info(
-        f"🔎 PR: **{selected_sheet}**"
+        f"🔎 Current PR: **{selected_sheet}**"
     )
 
+else:
 
-# =========================================================
-# KPI
-# =========================================================
-
-st.subheader(
-    "📊 Sheet KPIs"
-)
-
-
-# Number of rows
-records = len(df)
-
-
-# Number of columns
-columns_count = len(
-    df.columns
-)
-
-
-# Numeric columns
-numeric_columns = df.select_dtypes(
-    include=np.number
-).columns
-
-
-numeric_count = len(
-    numeric_columns
-)
-
-
-# Empty cells
-blank_cells = int(
-    df.isna().sum().sum()
-)
-
-
-k1, k2, k3, k4 = st.columns(4)
-
-
-with k1:
-
-    st.metric(
-        "Records",
-        f"{records:,}"
+    pr_column = find_pr_column(
+        df
     )
 
+    if pr_column:
 
-with k2:
-
-    st.metric(
-        "Columns",
-        f"{columns_count:,}"
-    )
-
-
-with k3:
-
-    st.metric(
-        "Numeric Columns",
-        f"{numeric_count:,}"
-    )
-
-
-with k4:
-
-    st.metric(
-        "Blank Cells",
-        f"{blank_cells:,}"
-    )
+        st.info(
+            f"🔎 PR Column: **{pr_column}**"
+        )
 
 
 # =========================================================
@@ -680,10 +989,13 @@ st.subheader(
     "🔍 Search"
 )
 
-search = st.text_input(
-    "Search inside this sheet",
+search_text = st.text_input(
+    "Search inside the selected sheet",
     placeholder=(
-        "Type any value to search..."
+        "Enter any value..."
+    ),
+    key=(
+        f"search_{selected_sheet}"
     )
 )
 
@@ -691,11 +1003,14 @@ search = st.text_input(
 filtered_df = df.copy()
 
 
-if search:
+if search_text:
 
-    search = search.strip()
+    search_text = (
+        search_text
+        .strip()
+    )
 
-    if search:
+    if search_text:
 
         mask = pd.Series(
             False,
@@ -707,19 +1022,24 @@ if search:
             mask = (
                 mask
                 |
-                filtered_df[column]
+                filtered_df[
+                    column
+                ]
                 .astype(str)
                 .str.contains(
-                    search,
+                    search_text,
                     case=False,
                     na=False,
                     regex=False
                 )
             )
 
-        filtered_df = filtered_df[
-            mask
-        ]
+        filtered_df = (
+            filtered_df[
+                mask
+            ]
+            .copy()
+        )
 
 
 # =========================================================
@@ -727,7 +1047,7 @@ if search:
 # =========================================================
 
 st.subheader(
-    f"📋 Data in {selected_sheet}"
+    f"📋 Data stored in {selected_sheet}"
 )
 
 
@@ -748,6 +1068,69 @@ else:
 
 
 # =========================================================
+# SIMPLE SHEET KPIs
+# =========================================================
+
+st.subheader(
+    "📊 Sheet Summary"
+)
+
+
+numeric_columns = (
+    filtered_df
+    .select_dtypes(
+        include=np.number
+    )
+    .columns
+)
+
+
+blank_cells = int(
+    filtered_df
+    .isna()
+    .sum()
+    .sum()
+)
+
+
+k1, k2, k3, k4 = st.columns(
+    4
+)
+
+
+with k1:
+
+    st.metric(
+        "Records",
+        f"{len(filtered_df):,}"
+    )
+
+
+with k2:
+
+    st.metric(
+        "Columns",
+        f"{len(filtered_df.columns):,}"
+    )
+
+
+with k3:
+
+    st.metric(
+        "Numeric Columns",
+        f"{len(numeric_columns):,}"
+    )
+
+
+with k4:
+
+    st.metric(
+        "Blank Cells",
+        f"{blank_cells:,}"
+    )
+
+
+# =========================================================
 # DOWNLOAD
 # =========================================================
 
@@ -755,15 +1138,21 @@ st.subheader(
     "⬇️ Export"
 )
 
-csv = filtered_df.to_csv(
-    index=False
-).encode(
-    "utf-8-sig"
+
+csv_data = (
+    filtered_df
+    .to_csv(
+        index=False
+    )
+    .encode(
+        "utf-8-sig"
+    )
 )
 
+
 st.download_button(
-    label="Download Selected Sheet",
-    data=csv,
+    "⬇️ Download Current Sheet",
+    data=csv_data,
     file_name=(
         f"{selected_project}_"
         f"{selected_sheet}.csv"
