@@ -1,4 +1,3 @@
-```python
 """
 Hassan Allam Construction
 Dynamic Multi-Project PR Dashboard
