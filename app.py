@@ -45,6 +45,20 @@ st.markdown(
     <style>
         .project-title { font-size: 30px; font-weight: 700; }
         .project-subtitle { color: #6b7280; margin-bottom: 20px; }
+
+        /* Hide GitHub icon, Deploy button, main menu and footer */
+        [data-testid="stToolbar"],
+        [data-testid="stToolbarActions"],
+        [data-testid="stAppDeployButton"],
+        [data-testid="stMainMenu"],
+        [data-testid="stDecoration"],
+        [data-testid="stStatusWidget"],
+        .stAppDeployButton,
+        #MainMenu,
+        footer {
+            visibility: hidden !important;
+            display: none !important;
+        }
     </style>
     """,
     unsafe_allow_html=True,
