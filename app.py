@@ -1,10 +1,6 @@
 from pathlib import Path
-from io import BytesIO
-
 import pandas as pd
-import openpyxl
 import streamlit as st
-
 
 # =========================================================
 # PAGE CONFIG
@@ -13,17 +9,15 @@ import streamlit as st
 st.set_page_config(
     page_title="Hassan Allam Construction | Projects Dashboard",
     page_icon="🏗️",
-    layout="wide",
+    layout="wide"
 )
 
-
 # =========================================================
-# PATHS
+# CONFIG
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
-
 
 # =========================================================
 # CSS
@@ -32,44 +26,22 @@ DATA_FOLDER = BASE_DIR / "data"
 st.markdown(
     """
     <style>
+        .project-title {
+            font-size: 30px;
+            font-weight: 700;
+        }
 
-    .main {
-        padding-top: 1rem;
-    }
-
-    .title {
-        font-size: 30px;
-        font-weight: 700;
-        margin-bottom: 5px;
-    }
-
-    .subtitle {
-        color: #6b7280;
-        margin-bottom: 20px;
-    }
-
-    .section-title {
-        font-size: 21px;
-        font-weight: 700;
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
-
-    div[data-testid="stMetric"] {
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 12px;
-        background: white;
-    }
-
+        .project-subtitle {
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
     </style>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
-
 # =========================================================
-# GET EXCEL FILES
+# FIND EXCEL FILES
 # =========================================================
 
 def get_excel_files():
@@ -81,449 +53,49 @@ def get_excel_files():
 
     for file in DATA_FOLDER.iterdir():
 
-        if (
-            file.is_file()
-            and file.suffix.lower() in [".xlsx", ".xls"]
-        ):
+        if file.is_file() and file.suffix.lower() in [".xlsx", ".xls"]:
             files.append(file)
 
-    return sorted(
-        files,
-        key=lambda x: x.name.lower()
-    )
+    return sorted(files, key=lambda x: x.name.lower())
 
 
 # =========================================================
-# READ WORKBOOK
+# READ EXCEL
 # =========================================================
 
 @st.cache_data(show_spinner=False)
-def read_workbook(file_path):
+def load_excel_file(file_path):
 
-    """
-    Read workbook using openpyxl.
+    try:
 
-    Returns:
+        excel = pd.ExcelFile(file_path)
 
-    {
-        sheet_name: {
-            "dataframe": dataframe,
-            "excel_tables": [...],
-            "ranges": [...]
-        }
-    }
-    """
+        sheets = {}
 
-    workbook = openpyxl.load_workbook(
-        file_path,
-        data_only=True
-    )
+        for sheet_name in excel.sheet_names:
 
-    result = {}
-
-    for ws in workbook.worksheets:
-
-        # -------------------------------------------------
-        # Read complete worksheet
-        # -------------------------------------------------
-
-        data = list(
-            ws.values
-        )
-
-        if not data:
-            result[ws.title] = {
-                "dataframe": pd.DataFrame(),
-                "excel_tables": [],
-                "ranges": []
-            }
-            continue
-
-        # Convert worksheet to dataframe
-        df = pd.DataFrame(data)
-
-        # Remove completely empty rows
-        df = df.dropna(
-            how="all"
-        )
-
-        # Remove completely empty columns
-        df = df.dropna(
-            axis=1,
-            how="all"
-        )
-
-        # -------------------------------------------------
-        # Excel Tables
-        # -------------------------------------------------
-
-        excel_tables = []
-
-        for table_name, table in ws.tables.items():
-
-            excel_tables.append(
-                {
-                    "name": table_name,
-                    "range": table.ref
-                }
+            df = pd.read_excel(
+                file_path,
+                sheet_name=sheet_name
             )
 
-        # -------------------------------------------------
-        # Detect normal data ranges
-        # -------------------------------------------------
+            # Remove completely empty rows
+            df = df.dropna(how="all")
 
-        ranges = detect_data_ranges(
-            ws
+            # Remove completely empty columns
+            df = df.dropna(axis=1, how="all")
+
+            sheets[sheet_name] = df
+
+        return sheets
+
+    except Exception as e:
+
+        st.error(
+            f"Error reading {file_path.name}: {e}"
         )
 
-        result[ws.title] = {
-            "dataframe": df,
-            "excel_tables": excel_tables,
-            "ranges": ranges
-        }
-
-    return result
-
-
-# =========================================================
-# DETECT DATA RANGES
-# =========================================================
-
-def detect_data_ranges(ws):
-
-    """
-    Detect independent blocks of cells.
-
-    Example:
-
-    A1:D8
-
-    F1:J10
-
-    A15:H25
-
-    will be detected as 3 separate ranges.
-    """
-
-    min_row = ws.min_row
-    max_row = ws.max_row
-    min_col = ws.min_column
-    max_col = ws.max_column
-
-    if (
-        min_row is None
-        or max_row is None
-        or min_col is None
-        or max_col is None
-    ):
-        return []
-
-    # -----------------------------------------------------
-    # Find rows containing data
-    # -----------------------------------------------------
-
-    occupied_rows = []
-
-    for r in range(
-        min_row,
-        max_row + 1
-    ):
-
-        has_data = False
-
-        for c in range(
-            min_col,
-            max_col + 1
-        ):
-
-            value = ws.cell(
-                r,
-                c
-            ).value
-
-            if value is not None:
-
-                has_data = True
-                break
-
-        if has_data:
-
-            occupied_rows.append(r)
-
-    if not occupied_rows:
-        return []
-
-    # -----------------------------------------------------
-    # Split rows into groups
-    # -----------------------------------------------------
-
-    row_groups = []
-
-    start = occupied_rows[0]
-    previous = occupied_rows[0]
-
-    for row in occupied_rows[1:]:
-
-        if row == previous + 1:
-
-            previous = row
-
-        else:
-
-            row_groups.append(
-                (
-                    start,
-                    previous
-                )
-            )
-
-            start = row
-            previous = row
-
-    row_groups.append(
-        (
-            start,
-            previous
-        )
-    )
-
-    # -----------------------------------------------------
-    # Detect columns inside each row group
-    # -----------------------------------------------------
-
-    ranges = []
-
-    for row_start, row_end in row_groups:
-
-        occupied_columns = []
-
-        for c in range(
-            min_col,
-            max_col + 1
-        ):
-
-            has_data = False
-
-            for r in range(
-                row_start,
-                row_end + 1
-            ):
-
-                value = ws.cell(
-                    r,
-                    c
-                ).value
-
-                if value is not None:
-
-                    has_data = True
-                    break
-
-            if has_data:
-
-                occupied_columns.append(c)
-
-        if not occupied_columns:
-            continue
-
-        # -------------------------------------------------
-        # Split columns into groups
-        # -------------------------------------------------
-
-        column_groups = []
-
-        start = occupied_columns[0]
-        previous = occupied_columns[0]
-
-        for col in occupied_columns[1:]:
-
-            if col == previous + 1:
-
-                previous = col
-
-            else:
-
-                column_groups.append(
-                    (
-                        start,
-                        previous
-                    )
-                )
-
-                start = col
-                previous = col
-
-        column_groups.append(
-            (
-                start,
-                previous
-            )
-        )
-
-        # -------------------------------------------------
-        # Create ranges
-        # -------------------------------------------------
-
-        for col_start, col_end in column_groups:
-
-            # Ignore single empty-looking cells
-            if (
-                row_end - row_start < 1
-                and col_end - col_start < 1
-            ):
-                continue
-
-            ranges.append(
-                {
-                    "min_row": row_start,
-                    "max_row": row_end,
-                    "min_col": col_start,
-                    "max_col": col_end
-                }
-            )
-
-    return ranges
-
-
-# =========================================================
-# RANGE TO DATAFRAME
-# =========================================================
-
-def range_to_dataframe(
-    ws,
-    min_row,
-    max_row,
-    min_col,
-    max_col
-):
-
-    values = []
-
-    for row in ws.iter_rows(
-        min_row=min_row,
-        max_row=max_row,
-        min_col=min_col,
-        max_col=max_col,
-        values_only=True
-    ):
-
-        values.append(
-            list(row)
-        )
-
-    if not values:
-        return pd.DataFrame()
-
-    # -----------------------------------------------------
-    # Assume first row is header
-    # -----------------------------------------------------
-
-    header = values[0]
-
-    data = values[1:]
-
-    # Create unique column names
-    columns = []
-
-    for i, value in enumerate(header):
-
-        if value is None:
-            value = f"Column {i + 1}"
-
-        value = str(value)
-
-        # Avoid duplicate columns
-        original = value
-        counter = 2
-
-        while value in columns:
-
-            value = (
-                f"{original}_{counter}"
-            )
-
-            counter += 1
-
-        columns.append(value)
-
-    df = pd.DataFrame(
-        data,
-        columns=columns
-    )
-
-    # Remove completely empty rows
-    df = df.dropna(
-        how="all"
-    )
-
-    # Remove completely empty columns
-    df = df.dropna(
-        axis=1,
-        how="all"
-    )
-
-    return df
-
-
-# =========================================================
-# SAFE KEY
-# =========================================================
-
-def safe_key(text):
-
-    return (
-        str(text)
-        .replace(" ", "_")
-        .replace("-", "_")
-        .replace(".", "_")
-        .replace("/", "_")
-        .replace("\\", "_")
-        .replace(":", "_")
-    )
-
-
-# =========================================================
-# DATA FOLDER CHECK
-# =========================================================
-
-excel_files = get_excel_files()
-
-
-if not DATA_FOLDER.exists():
-
-    st.error(
-        "❌ The `data` folder does not exist."
-    )
-
-    st.code(
-        str(DATA_FOLDER)
-    )
-
-    st.stop()
-
-
-if not excel_files:
-
-    st.error(
-        "❌ No Excel files found in the `data` folder."
-    )
-
-    st.info(
-        """
-        Upload your Excel files into:
-
-        data/
-
-        Example:
-
-        data/
-        ├── Project1.xlsx
-        ├── Project2.xlsx
-        └── Project3.xlsx
-        """
-    )
-
-    st.stop()
+        return {}
 
 
 # =========================================================
@@ -531,18 +103,95 @@ if not excel_files:
 # =========================================================
 
 st.markdown(
-    '<div class="title">'
-    '🏗️ Hassan Allam Construction'
-    '</div>',
+    '<div class="project-title">🏗️ Hassan Allam Construction</div>',
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="subtitle">'
+    '<div class="project-subtitle">'
     'Construction Projects & Pipeline Dashboard'
     '</div>',
     unsafe_allow_html=True
 )
+
+# =========================================================
+# GET FILES
+# =========================================================
+
+excel_files = get_excel_files()
+
+
+# =========================================================
+# CHECK DATA FOLDER
+# =========================================================
+
+if not DATA_FOLDER.exists():
+
+    st.error("❌ The data folder does not exist.")
+
+    st.write(
+        f"Expected location:"
+    )
+
+    st.code(str(DATA_FOLDER))
+
+    st.info(
+        """
+        Your GitHub structure must be:
+
+        test_streamlit/
+        ├── app.py
+        ├── requirements.txt
+        └── data/
+            └── Project.xlsx
+        """
+    )
+
+    st.stop()
+
+
+# =========================================================
+# CHECK EXCEL FILES
+# =========================================================
+
+if not excel_files:
+
+    st.error("❌ No Excel files found inside the data folder.")
+
+    st.write("The application is looking here:")
+
+    st.code(str(DATA_FOLDER))
+
+    st.write("Files/folders currently found:")
+
+    items = list(DATA_FOLDER.iterdir())
+
+    if items:
+
+        for item in items:
+
+            st.write(
+                f"- {item.name}"
+            )
+
+    else:
+
+        st.warning(
+            "The data folder is completely empty."
+        )
+
+    st.info(
+        """
+        Upload your Excel file inside the GitHub `data` folder.
+
+        Example:
+
+        data/
+        └── Project.xlsx
+        """
+    )
+
+    st.stop()
 
 
 # =========================================================
@@ -575,65 +224,58 @@ with st.sidebar:
 
     st.divider()
 
-    st.write(
-        f"**Projects:** {len(project_names)}"
-    )
+    st.write("Excel files found:")
 
     st.write(
-        f"**Excel Files:** {len(excel_files)}"
+        f"**{len(excel_files)}**"
     )
+
+    st.divider()
+
+    for file in excel_files:
+
+        st.caption(
+            f"📄 {file.name}"
+        )
 
 
 # =========================================================
-# LOAD SELECTED PROJECT
+# LOAD PROJECT
 # =========================================================
 
-selected_file = project_files[
-    selected_project
-]
+selected_file = project_files[selected_project]
 
-workbook_data = read_workbook(
-    selected_file
-)
+sheets = load_excel_file(selected_file)
 
 
-if not workbook_data:
+# =========================================================
+# CHECK SHEETS
+# =========================================================
+
+if not sheets:
 
     st.error(
-        "Unable to read the selected Excel file."
+        "❌ No sheets were found in this Excel file."
     )
 
     st.stop()
 
 
-# =========================================================
-# SHEETS
-# =========================================================
-
-sheet_names = list(
-    workbook_data.keys()
-)
+sheet_names = list(sheets.keys())
 
 
 # =========================================================
-# SELECTED SHEET
+# SHEET SELECTION
 # =========================================================
 
 if "selected_sheet" not in st.session_state:
 
-    st.session_state.selected_sheet = (
-        sheet_names[0]
-    )
+    st.session_state.selected_sheet = sheet_names[0]
 
 
-if (
-    st.session_state.selected_sheet
-    not in sheet_names
-):
+if st.session_state.selected_sheet not in sheet_names:
 
-    st.session_state.selected_sheet = (
-        sheet_names[0]
-    )
+    st.session_state.selected_sheet = sheet_names[0]
 
 
 # =========================================================
@@ -641,9 +283,9 @@ if (
 # =========================================================
 
 st.info(
-    f"📁 **Project:** {selected_project}  |  "
-    f"📄 **File:** {selected_file.name}  |  "
-    f"📑 **Sheets:** {len(sheet_names)}"
+    f"📁 Project: **{selected_project}**  |  "
+    f"📄 File: **{selected_file.name}**  |  "
+    f"📑 Sheets: **{len(sheet_names)}**"
 )
 
 
@@ -651,12 +293,9 @@ st.info(
 # SHEET BUTTONS
 # =========================================================
 
-st.subheader(
-    "📑 Project Sheets"
-)
+st.subheader("📑 Project Sheets")
 
 BUTTONS_PER_ROW = 4
-
 
 for start in range(
     0,
@@ -668,9 +307,7 @@ for start in range(
         start:start + BUTTONS_PER_ROW
     ]
 
-    cols = st.columns(
-        BUTTONS_PER_ROW
-    )
+    cols = st.columns(BUTTONS_PER_ROW)
 
     for i, sheet_name in enumerate(row):
 
@@ -678,50 +315,26 @@ for start in range(
 
             if st.button(
                 f"📄 {sheet_name}",
-                key=(
-                    f"sheet_"
-                    f"{safe_key(selected_project)}_"
-                    f"{safe_key(sheet_name)}"
-                ),
+                key=f"sheet_{start}_{i}_{sheet_name}",
                 use_container_width=True
             ):
 
-                st.session_state.selected_sheet = (
-                    sheet_name
-                )
+                st.session_state.selected_sheet = sheet_name
 
                 st.rerun()
 
 
 # =========================================================
-# SELECTED SHEET DATA
+# SELECTED SHEET
 # =========================================================
 
-selected_sheet = (
-    st.session_state.selected_sheet
-)
+selected_sheet = st.session_state.selected_sheet
 
-sheet_info = workbook_data[
-    selected_sheet
-]
+df = sheets[selected_sheet]
 
 
 # =========================================================
-# OPENPYXL WORKSHEET
-# =========================================================
-
-workbook = openpyxl.load_workbook(
-    selected_file,
-    data_only=True
-)
-
-ws = workbook[
-    selected_sheet
-]
-
-
-# =========================================================
-# SHEET HEADER
+# SHEET TITLE
 # =========================================================
 
 st.subheader(
@@ -734,322 +347,120 @@ st.caption(
 
 
 # =========================================================
-# EXCEL TABLES
+# KPIs
 # =========================================================
 
-excel_tables = sheet_info[
-    "excel_tables"
-]
+records = len(df)
+
+columns = len(df.columns)
+
+numeric_columns = len(
+    df.select_dtypes(
+        include="number"
+    ).columns
+)
+
+blank_cells = int(
+    df.isna().sum().sum()
+)
 
 
-# =========================================================
-# DETECTED RANGES
-# =========================================================
+c1, c2, c3, c4 = st.columns(4)
 
-ranges = sheet_info[
-    "ranges"
-]
+with c1:
+
+    st.metric(
+        "Records",
+        f"{records:,}"
+    )
+
+with c2:
+
+    st.metric(
+        "Columns",
+        f"{columns:,}"
+    )
+
+with c3:
+
+    st.metric(
+        "Numeric Columns",
+        f"{numeric_columns:,}"
+    )
+
+with c4:
+
+    st.metric(
+        "Blank Cells",
+        f"{blank_cells:,}"
+    )
 
 
 # =========================================================
 # SEARCH
 # =========================================================
 
-search_text = st.text_input(
-    "🔎 Search in current sheet",
+st.subheader("🔎 Search")
+
+search = st.text_input(
+    "Search current sheet",
     placeholder="Search..."
 )
 
 
-# =========================================================
-# EXCEL TABLES SECTION
-# =========================================================
+filtered_df = df.copy()
 
-if excel_tables:
 
-    st.markdown(
-        "### 📋 Excel Tables"
+if search:
+
+    search_lower = search.lower()
+
+    mask = (
+        filtered_df
+        .astype(str)
+        .apply(
+            lambda col:
+            col.str.lower().str.contains(
+                search_lower,
+                na=False
+            )
+        )
+        .any(axis=1)
     )
 
-    for table_index, table_info in enumerate(
-        excel_tables,
-        start=1
-    ):
+    filtered_df = filtered_df[mask]
 
-        table_name = table_info[
-            "name"
-        ]
-
-        table_range = table_info[
-            "range"
-        ]
-
-        st.markdown(
-            f"#### 📋 {table_name}"
-        )
-
-        st.caption(
-            f"Range: {table_range}"
-        )
-
-        # Parse range
-        min_cell, max_cell = (
-            table_range.split(":")
-        )
-
-        from openpyxl.utils.cell import (
-            range_boundaries
-        )
-
-        (
-            min_col,
-            min_row,
-            max_col,
-            max_row
-        ) = range_boundaries(
-            table_range
-        )
-
-        df_table = range_to_dataframe(
-            ws,
-            min_row,
-            max_row,
-            min_col,
-            max_col
-        )
-
-        # Search
-        if search_text:
-
-            mask = (
-                df_table
-                .astype(str)
-                .apply(
-                    lambda col:
-                    col.str.contains(
-                        search_text,
-                        case=False,
-                        na=False
-                    )
-                )
-                .any(axis=1)
-            )
-
-            df_table = df_table[
-                mask
-            ]
-
-        # Metrics
-        c1, c2 = st.columns(2)
-
-        with c1:
-
-            st.metric(
-                "Records",
-                f"{len(df_table):,}"
-            )
-
-        with c2:
-
-            st.metric(
-                "Columns",
-                f"{len(df_table.columns):,}"
-            )
-
-        st.dataframe(
-            df_table,
-            use_container_width=True,
-            hide_index=True
-        )
-
-        st.divider()
-
-
-# =========================================================
-# NORMAL RANGES SECTION
-# =========================================================
-
-if ranges:
-
-    st.markdown(
-        "### 📦 Detected Ranges"
-    )
-
-    # Track Excel Table ranges
-    excel_table_ranges = set()
-
-    for table_info in excel_tables:
-
-        excel_table_ranges.add(
-            table_info["range"]
-        )
-
-    range_number = 0
-
-    for r in ranges:
-
-        range_number += 1
-
-        min_row = r[
-            "min_row"
-        ]
-
-        max_row = r[
-            "max_row"
-        ]
-
-        min_col = r[
-            "min_col"
-        ]
-
-        max_col = r[
-            "max_col"
-        ]
-
-        from openpyxl.utils import (
-            get_column_letter
-        )
-
-        range_address = (
-            f"{get_column_letter(min_col)}"
-            f"{min_row}:"
-            f"{get_column_letter(max_col)}"
-            f"{max_row}"
-        )
-
-        # -------------------------------------------------
-        # Skip if this range exactly matches an Excel Table
-        # -------------------------------------------------
-
-        if range_address in excel_table_ranges:
-            continue
-
-        df_range = range_to_dataframe(
-            ws,
-            min_row,
-            max_row,
-            min_col,
-            max_col
-        )
-
-        if df_range.empty:
-            continue
-
-        # Ignore very small single-cell blocks
-        if (
-            len(df_range) == 0
-            and len(df_range.columns) <= 1
-        ):
-            continue
-
-        st.markdown(
-            f"#### 📦 Range {range_number}"
-        )
-
-        st.caption(
-            f"Excel Range: {range_address}"
-        )
-
-        # Search
-        display_range = df_range.copy()
-
-        if search_text:
-
-            mask = (
-                display_range
-                .astype(str)
-                .apply(
-                    lambda col:
-                    col.str.contains(
-                        search_text,
-                        case=False,
-                        na=False
-                    )
-                )
-                .any(axis=1)
-            )
-
-            display_range = (
-                display_range[mask]
-            )
-
-        # Metrics
-        c1, c2 = st.columns(2)
-
-        with c1:
-
-            st.metric(
-                "Records",
-                f"{len(display_range):,}"
-            )
-
-        with c2:
-
-            st.metric(
-                "Columns",
-                f"{len(display_range.columns):,}"
-            )
-
-        st.dataframe(
-            display_range,
-            use_container_width=True,
-            hide_index=True
-        )
-
-        st.divider()
-
-
-# =========================================================
-# NO DATA
-# =========================================================
-
-if not excel_tables and not ranges:
-
-    st.warning(
-        "No tables or data ranges were detected "
-        "in this sheet."
+    st.info(
+        f"Found {len(filtered_df):,} records."
     )
 
 
 # =========================================================
-# SHEET SUMMARY
+# TABLE
 # =========================================================
 
-st.markdown(
-    "### 📊 Sheet Summary"
+st.subheader("📊 Data")
+
+st.dataframe(
+    filtered_df,
+    use_container_width=True,
+    height=600,
+    hide_index=True
 )
 
-c1, c2, c3 = st.columns(3)
-
-with c1:
-
-    st.metric(
-        "Excel Tables",
-        len(excel_tables)
-    )
-
-with c2:
-
-    st.metric(
-        "Detected Ranges",
-        len(ranges)
-    )
-
-with c3:
-
-    st.metric(
-        "Total Sheets",
-        len(sheet_names)
-    )
-
 
 # =========================================================
-# FOOTER
+# DOWNLOAD
 # =========================================================
 
-st.divider()
+csv = filtered_df.to_csv(
+    index=False
+).encode("utf-8-sig")
 
-st.caption(
-    "Hassan Allam Construction | "
-    "Projects & Pipeline Dashboard"
+
+st.download_button(
+    "⬇️ Download Current Sheet",
+    csv,
+    file_name=f"{selected_sheet}.csv",
+    mime="text/csv"
 )
