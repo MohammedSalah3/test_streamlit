@@ -15,6 +15,7 @@ st.set_page_config(
     page_title="Hassan Allam Construction | Projects Dashboard",
     page_icon="🏗️",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -1079,6 +1080,12 @@ st.info(
     f"📄 File: **{selected_file.name}**  |  "
     f"📑 Sheets: **{len(project_data)}**"
     + (f"  |  🙈 Hidden empty templates: **{hidden_count}**" if hidden_count else "")
+)
+
+
+st.caption(
+    "👈 Use the sidebar to switch between project files "
+    "and to show / hide empty PR templates."
 )
 
 
