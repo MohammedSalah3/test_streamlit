@@ -22,6 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
+APP_VERSION = "v5 - dark mode + sidebar expanded"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1039,6 +1040,7 @@ with st.sidebar:
     hide_empty = st.checkbox("Hide empty PR templates", value=True)
 
     st.divider()
+    st.caption(f"App version: {APP_VERSION}")
     st.write("Excel files found:")
     st.write(f"**{len(excel_files)}**")
 
