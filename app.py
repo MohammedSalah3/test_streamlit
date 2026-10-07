@@ -1,4 +1,3 @@
-import html as _html
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -24,15 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v12b - empty sheet check"
+APP_VERSION = "v10c - empty sheet check"
 
 SHEET_ICONS = {
-    "unit_prices": ":material/payments:",
-    "pr": ":material/description:",
-    "pr_empty": ":material/draft:",
-    "total": ":material/bar_chart:",
-    "generic": ":material/table_chart:",
-    "error": ":material/error:",
+    "unit_prices": "💰",
+    "pr": "📝",
+    "pr_empty": "⚪",
+    "total": "📊",
+    "generic": "📄",
+    "error": "⚠️",
 }
 
 SHEET_TYPE_LABELS = {
@@ -47,149 +46,8 @@ SHEET_TYPE_LABELS = {
 st.markdown(
     """
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-
-        :root {
-            --ink: #14283C;
-            --muted: #5E6E80;
-            --line: #D9E1E9;
-            --surface: #FFFFFF;
-            --canvas: #F2F5F8;
-            --primary: #1B3A5C;
-            --primary-soft: #E4ECF4;
-            --good: #2A7F73;
-            --warn: #B9801F;
-            --bad: #A63D3D;
-        }
-
-        .stApp { background: var(--canvas); }
-
-        .stApp, .stApp p, .stApp label, .stApp button, .stApp input,
-        .stApp textarea, .stApp h1, .stApp h2, .stApp h3, .stApp h4,
-        .stApp h5, .stMarkdown {
-            font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-        }
-
-        .block-container {
-            padding-top: 2.4rem;
-            padding-bottom: 3rem;
-            max-width: 1400px;
-        }
-
-        /* ---------- header ---------- */
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 16px;
-            flex-wrap: wrap;
-            padding-bottom: 16px;
-            margin-bottom: 18px;
-            border-bottom: 1px solid var(--line);
-        }
-        .brand { font-size: 13px; color: var(--muted); font-weight: 500; }
-        .file-title {
-            font-size: 28px; font-weight: 600; color: var(--ink);
-            line-height: 1.2; margin-top: 4px;
-        }
-        .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-        .chip {
-            font-size: 12.5px; padding: 4px 11px; border-radius: 999px;
-            background: #EDF1F5; color: #3E4F61; border: 1px solid var(--line);
-            white-space: nowrap;
-        }
-        .chip.accent { background: var(--primary-soft); color: var(--primary); border-color: #C5D4E4; }
-
-        /* ---------- section titles ---------- */
-        .section-title {
-            font-size: 15px; font-weight: 600; color: var(--ink);
-            margin: 18px 0 8px;
-        }
-
-        /* ---------- KPI cards ---------- */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-            gap: 12px;
-            margin: 4px 0 18px;
-        }
-        .kpi {
-            background: var(--surface); border: 1px solid var(--line);
-            border-radius: 10px; padding: 14px 16px;
-        }
-        .kpi .label {
-            font-size: 12.5px; color: var(--muted);
-            display: flex; align-items: center; gap: 7px;
-        }
-        .kpi .label i {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: var(--dot, transparent); display: inline-block;
-        }
-        .kpi.good { --dot: var(--good); }
-        .kpi.warn { --dot: var(--warn); }
-        .kpi.bad { --dot: var(--bad); }
-        .kpi .value {
-            font-size: 26px; font-weight: 600; color: var(--ink);
-            font-variant-numeric: tabular-nums; line-height: 1.25;
-        }
-        .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .kpi.bad .value { color: var(--bad); }
-
-        /* ---------- progress bar ---------- */
-        .bar {
-            height: 8px; background: #E8ECF1; border-radius: 999px;
-            overflow: hidden; margin-top: 10px;
-        }
-        .bar > span {
-            display: block; height: 100%; border-radius: 999px;
-            background: var(--primary);
-        }
-        .bar.done > span { background: var(--good); }
-        .bar.over > span { background: var(--bad); }
-
-        /* ---------- PO cards (overview) ---------- */
-        div[class*="st-key-pocard_"] {
-            background: var(--surface); border: 1px solid var(--line);
-            border-radius: 10px; padding: 16px 16px 12px;
-        }
-        .po-head { display: flex; justify-content: space-between;
-                   align-items: flex-start; gap: 8px; }
-        .po-title { font-size: 17px; font-weight: 600; color: var(--ink); }
-        .po-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-        .po-nums {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 8px; margin: 12px 0 4px;
-        }
-        .po-nums span { display: block; font-size: 11.5px; color: var(--muted); }
-        .po-nums b {
-            font-size: 16px; font-weight: 600; color: var(--ink);
-            font-variant-numeric: tabular-nums;
-        }
-        .po-pct { font-size: 12px; color: var(--muted); margin-top: 6px; }
-
-        /* ---------- empty state ---------- */
-        .empty-state {
-            background: var(--surface); border: 1px dashed #C5CCD6;
-            border-radius: 10px; padding: 28px 22px; color: var(--muted);
-        }
-        .empty-state b { color: var(--ink); font-size: 16px; }
-
-        /* ---------- sidebar ---------- */
-        section[data-testid="stSidebar"] {
-            background: var(--surface); border-right: 1px solid var(--line);
-        }
-        .side-brand { font-size: 17px; font-weight: 600; color: var(--ink);
-                      line-height: 1.25; }
-        .side-brand span { display: block; font-size: 12.5px;
-                           font-weight: 400; color: var(--muted); margin-top: 2px; }
-        .side-label { font-size: 12.5px; font-weight: 600; color: var(--muted);
-                      margin: 6px 0 4px; }
-
-        /* ---------- widgets ---------- */
-        button[data-baseweb="tab"] { font-weight: 500; }
-        div[data-testid="stExpander"] {
-            background: var(--surface); border-radius: 10px;
-        }
+        .project-title { font-size: 30px; font-weight: 700; }
+        .project-subtitle { color: #6b7280; margin-bottom: 20px; }
 
         /* Hide GitHub icon, Deploy button, main menu and footer.
            NOTE: stToolbar itself must stay visible - it holds the
@@ -709,7 +567,6 @@ def parse_total(grid):
 
         if value:
             current = str(value).strip()
-            current = {"SCAFFOLDIN": "SCAFFOLDING"}.get(current.upper(), current)
 
         labels[c] = current if header[c] is not None else None
 
@@ -891,113 +748,21 @@ def get_excel_files():
 
 
 # =========================================================
-# UI HELPERS (HTML pieces)
-# =========================================================
-
-STATUS_STYLES = {
-    "Completed": ("#E1F1EE", "#1F6B60"),
-    "Partial": ("#F8EDD6", "#8A5A12"),
-    "Over-sent": ("#F6E1E1", "#8E2F2F"),
-    "Not started": ("#EAEEF2", "#52606F"),
-}
-
-
-def style_status(value):
-    bg, fg = STATUS_STYLES.get(value, (None, None))
-    if not bg:
-        return ""
-    return f"background-color: {bg}; color: {fg}; font-weight: 500;"
-
-CHART_COLORS = ["#1B3A5C", "#2A7F73", "#C28A2C"]
-
-
-def esc(value):
-    return _html.escape(value if isinstance(value, str) else fmt(value))
-
-
-def bar_html(fraction):
-    if fraction is None:
-        return ""
-
-    pct = max(0.0, min(fraction, 1.0)) * 100
-
-    if fraction > 1.0001:
-        cls = "over"
-    elif fraction >= 0.9999:
-        cls = "done"
-    else:
-        cls = ""
-
-    return f'<div class="bar {cls}"><span style="width:{pct:.1f}%"></span></div>'
-
-
-def kpi(label, value, sub="", tone="", bar=None):
-    sub_html = f'<div class="sub">{esc(sub)}</div>' if sub else ""
-    dot = "<i></i>" if tone else ""
-    return (
-        f'<div class="kpi {tone}">'
-        f'<div class="label">{dot}{esc(label)}</div>'
-        f'<div class="value">{esc(value)}</div>'
-        f"{sub_html}{bar_html(bar)}"
-        "</div>"
-    )
-
-
-def kpi_grid(cards):
-    st.markdown(
-        '<div class="kpi-grid">' + "".join(cards) + "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-def chips_html(items, accent_first=False):
-    parts = []
-    for i, item in enumerate(items):
-        if item in (None, ""):
-            continue
-        cls = "chip accent" if (accent_first and i == 0) else "chip"
-        parts.append(f'<span class="{cls}">{esc(item)}</span>')
-    return f'<div class="chips">{"".join(parts)}</div>'
-
-
-def section_title(text):
-    st.markdown(
-        f'<div class="section-title">{esc(text)}</div>', unsafe_allow_html=True
-    )
-
-
-def num(value):
-    return f"{value:,.0f}"
-
-
-def pct_text(value):
-    return f"{value:.0%}" if value is not None and pd.notna(value) else "—"
-
-
-# =========================================================
 # VIEWS
 # =========================================================
 
-def show_table(df, height=600, column_config=None, status_col=None):
-    data = arrow_safe(df)
-
-    if status_col and status_col in data.columns:
-        styler = data.style
-        apply = getattr(styler, "map", None) or styler.applymap
-        data = apply(style_status, subset=[status_col])
-
+def show_table(df, height=600):
     st.dataframe(
-        data,
+        arrow_safe(df),
         width="stretch",
         hide_index=True,
         height=height,
-        column_config=column_config,
     )
 
 
 def text_filter(df, columns, key):
     query = st.text_input(
-        ":material/search: Search", key=key, placeholder="Item name or asset code..."
+        "🔎 Search", key=key, placeholder="Item name or asset code..."
     )
 
     if not query:
@@ -1017,146 +782,69 @@ def text_filter(df, columns, key):
 
 
 def show_unit_prices(data, sheet):
-    table = data["table"]
+    for line in data["title_lines"]:
+        st.caption(line)
 
-    st.markdown(
-        chips_html([f"{len(table):,} items"] + data["title_lines"][-1:]),
-        unsafe_allow_html=True,
-    )
+    df = text_filter(data["table"], ["ITEMS NAME", "ASSET CODE"], f"s_{sheet}")
 
-    df = text_filter(table, ["ITEMS NAME", "ASSET CODE"], f"s_{sheet}")
-
-    st.caption(f"Showing {len(df):,} of {len(table):,} items")
+    st.caption(f"{len(df):,} items")
     show_table(df)
 
 
 def show_pr(data, sheet):
     info = data["info"]
     summary = data["summary"]
-    items = data["items"]
-    active = items[items["Active"]]
 
-    po = summary.get("PO No")
-    title = f"PO {po}" if po else sheet
-
-    st.markdown(
-        '<div class="po-head" style="margin-bottom:8px">'
-        f'<div class="po-title" style="font-size:22px">{esc(title)}</div>'
-        + chips_html(
-            [
-                summary["Category"],
-                summary["Supplier"],
-                f"PR {fmt(summary['PR No'])}" if summary["PR No"] else None,
-                fmt(summary["Date"]) if summary["Date"] else None,
-            ],
-            accent_first=True,
-        )
-        + "</div>",
-        unsafe_allow_html=True,
-    )
+    c = st.columns(6)
+    c[0].metric("PO No", summary.get("PO No") or "—")
+    c[1].metric("PR No", fmt(summary["PR No"]) or "—")
+    c[2].metric("PR Date", fmt(summary["Date"]) or "—")
+    c[3].metric("Category", summary["Category"] or "—")
+    c[4].metric("Supplier", summary["Supplier"] or "—")
+    c[5].metric("Items", summary["Items"])
 
     extra = [
-        f"{k}: {fmt(v)}"
+        f"**{k}:** {fmt(v)}"
         for k, v in info.items()
         if k not in ("PR# No", "PR# Date") and v is not None
     ]
     if extra:
-        st.markdown(chips_html(extra), unsafe_allow_html=True)
+        st.caption("  |  ".join(extra))
 
-    over = int((active["Status"] == "Over-sent").sum())
+    items = data["items"]
+    active = items[items["Active"]]
 
-    kpi_grid(
-        [
-            kpi("Required", num(summary["Required"]), f"{summary['Items']} items"),
-            kpi("Sent", num(summary["Sent"]), tone="good"),
-            kpi("Remaining", num(summary["Remaining"]), tone="warn"),
-            kpi(
-                "Sent / Required",
-                pct_text(summary["Sent %"]),
-                bar=summary["Sent %"],
-            ),
-            kpi(
-                "Over-sent items",
-                over,
-                "Sent more than required" if over else "None",
-                tone="bad" if over else "",
-            ),
-        ]
+    k = st.columns(5)
+    k[0].metric("Required", f"{summary['Required']:,.0f}")
+    k[1].metric("Sent", f"{summary['Sent']:,.0f}")
+    k[2].metric("Remaining", f"{summary['Remaining']:,.0f}")
+    k[3].metric(
+        "Sent / Required",
+        f"{summary['Sent %']:.0%}" if summary["Sent %"] is not None else "—",
     )
+    k[4].metric("Over-sent items", int((active["Status"] == "Over-sent").sum()))
 
     tab_items, tab_ship, tab_matrix = st.tabs(
-        [":material/inventory_2: Items", ":material/local_shipping: Shipments", ":material/grid_on: Items × Shipments"]
+        ["📦 Items", "🚚 Shipments", "🧮 Items × Shipments"]
     )
 
     with tab_items:
-        f1, f2, f3 = st.columns([2, 2, 1.2])
-
-        with f1:
-            query = st.text_input(
-                ":material/search: Search",
-                key=f"s_{sheet}",
-                placeholder="Item name or asset code...",
-            )
-        with f2:
-            statuses = st.multiselect(
-                "Status",
-                list(STATUS_STYLES),
-                key=f"st_{sheet}",
-            )
-        with f3:
-            st.write("")
-            only_active = st.toggle(
-                "With quantities only", value=True, key=f"a_{sheet}"
-            )
+        only_active = st.checkbox(
+            "Only items with quantities", value=True, key=f"a_{sheet}"
+        )
+        statuses = st.multiselect(
+            "Status",
+            ["Not started", "Partial", "Completed", "Over-sent"],
+            key=f"st_{sheet}",
+        )
 
         df = active if only_active else items
-
         if statuses:
             df = df[df["Status"].isin(statuses)]
 
-        if query:
-            mask = pd.Series(False, index=df.index)
-            for col in ("Item", "Asset Code"):
-                mask |= (
-                    df[col]
-                    .astype(str)
-                    .str.contains(query, case=False, na=False, regex=False)
-                )
-            df = df[mask]
+        df = text_filter(df, ["Item", "Asset Code"], f"s_{sheet}")
 
-        view = df.drop(columns=["Active", "Full Serial"]).copy()
-
-        view["Sent %"] = [
-            min(send / req, 1.0) * 100 if req > 0 else None
-            for req, send in zip(view["Req Qty"], view["Send Qty"])
-        ]
-
-        ordered = [
-            "No", "Asset Code", "Item", "Req Qty", "Send Qty",
-            "Remain Qty", "Sent %", "T.Return", "Status", "Remarks",
-        ]
-        if view["Remarks"].isna().all():
-            ordered.remove("Remarks")
-        else:
-            view["Remarks"] = view["Remarks"].fillna("").astype(str)
-
-        view = view[ordered]
-
-        st.caption(f"{len(view):,} items")
-
-        show_table(
-            view,
-            status_col="Status",
-            column_config={
-                "Req Qty": st.column_config.NumberColumn("Required", format="localized"),
-                "Send Qty": st.column_config.NumberColumn("Sent", format="localized"),
-                "Remain Qty": st.column_config.NumberColumn("Remaining", format="localized"),
-                "T.Return": st.column_config.NumberColumn("Returned", format="localized"),
-                "Sent %": st.column_config.ProgressColumn(
-                    "Progress", min_value=0, max_value=100, format="%d%%"
-                ),
-            },
-        )
+        show_table(df.drop(columns=["Active", "Full Serial"]))
 
     with tab_ship:
         if data["shipments"].empty:
@@ -1195,43 +883,30 @@ def show_total(data, sheet):
     pct = footer_value("PERCENTAGE", "T. REQ")
 
     if any(v is not None for v in purch):
-        section_title("Value summary (L.E)")
-
-        cards = [
-            kpi("Purchase value – Required", num(purch[0]) if purch[0] is not None else "—"),
-            kpi("Purchase value – Sent", num(purch[1]) if purch[1] is not None else "—", tone="good"),
-            kpi("Purchase value – Remaining", num(purch[2]) if purch[2] is not None else "—", tone="warn"),
-            kpi(
-                "Sent (by value)",
-                f"{pct:.1%}" if pct is not None else "—",
-                bar=pct,
-            ),
-        ]
-        kpi_grid(cards)
+        st.markdown("##### 💵 Value summary (L.E)")
+        m = st.columns(4)
+        labels = ["Purchase value – Required", "Purchase value – Sent", "Purchase value – Remaining"]
+        for i, (label, v) in enumerate(zip(labels, purch)):
+            m[i].metric(label, f"{v:,.0f}" if v is not None else "—")
+        m[3].metric("Sent % (by value)", f"{pct:.1%}" if pct is not None else "—")
 
         if any(v is not None for v in ext):
-            kpi_grid(
-                [
-                    kpi(label, num(v) if v is not None else "—")
-                    for label, v in zip(
-                        ["Ext. hire – Required", "Ext. hire – Sent", "Ext. hire – Remaining"],
-                        ext,
-                    )
-                ]
-            )
+            e = st.columns(3)
+            for i, (label, v) in enumerate(
+                zip(["Ext. hire – Required", "Ext. hire – Sent", "Ext. hire – Remaining"], ext)
+            ):
+                e[i].metric(label, f"{v:,.0f}" if v is not None else "—")
 
     groups_df = data["group_totals"]
     groups_df = groups_df[groups_df["Group"] != "Total Summary"]
 
     if not groups_df.empty:
-        section_title("Quantities by work group")
+        st.markdown("##### 📊 Quantities by work group")
         st.bar_chart(
-            groups_df.set_index("Group")[["Required", "Sent", "Remaining"]],
-            color=CHART_COLORS,
-            stack=False,
+            groups_df.set_index("Group")[["Required", "Sent", "Remaining"]]
         )
 
-    section_title("Items")
+    st.markdown("##### 📋 Items")
 
     options = ["All groups"] + data["groups"]
     group = st.selectbox("Work group", options, key=f"g_{sheet}")
@@ -1280,17 +955,22 @@ def show_generic(data, sheet):
     show_table(df)
 
 
-def open_sheet(name):
-    """Callback used by the 'Open sheet' buttons on the overview cards."""
-    st.session_state.selected_sheet = name
-
-
 def show_overview(project_data, project_name):
     rows = []
 
     for sheet, data in project_data.items():
         if data["type"] == "pr":
             rows.append({"Sheet": sheet, **data["summary"]})
+
+    st.markdown(f"#### 🏠 {project_name} – Overview")
+
+    types = [d["type"] for d in project_data.values()]
+
+    c = st.columns(4)
+    c[0].metric("Sheets", len(project_data))
+    c[1].metric("PR / PO with data", len(rows))
+    c[2].metric("Empty PR templates", types.count("pr_empty"))
+    c[3].metric("Other sheets", len(project_data) - len(rows) - types.count("pr_empty"))
 
     if not rows:
         st.info("No PR / PO sheet with quantities was found in this file.")
@@ -1300,70 +980,24 @@ def show_overview(project_data, project_name):
 
     total_req = df["Required"].sum()
     total_send = df["Sent"].sum()
-    ratio = (total_send / total_req) if total_req else None
 
-    kpi_grid(
-        [
-            kpi("PR / PO with data", len(rows)),
-            kpi("Total required", num(total_req)),
-            kpi("Total sent", num(total_send), tone="good"),
-            kpi("Total remaining", num(df["Remaining"].sum()), tone="warn"),
-            kpi("Sent / Required", pct_text(ratio), bar=ratio),
-        ]
+    k = st.columns(4)
+    k[0].metric("Total required", f"{total_req:,.0f}")
+    k[1].metric("Total sent", f"{total_send:,.0f}")
+    k[2].metric("Total remaining", f"{df['Remaining'].sum():,.0f}")
+    k[3].metric(
+        "Sent / Required",
+        f"{total_send / total_req:.0%}" if total_req else "—",
     )
 
-    section_title("PR / PO sheets")
+    st.markdown("##### PR / PO sheets")
+    display = df.copy()
+    display["Sent %"] = display["Sent %"].map(
+        lambda v: f"{v:.0%}" if pd.notna(v) else ""
+    )
+    show_table(display, height=250)
 
-    per_row = 3
-
-    for start in range(0, len(rows), per_row):
-        cols = st.columns(per_row)
-
-        for col, row in zip(cols, rows[start:start + per_row]):
-            with col:
-                with st.container(key=f"pocard_{row['Sheet']}"):
-                    po = row.get("PO No")
-                    title = f"PO {po}" if po else row["Sheet"]
-
-                    st.markdown(
-                        '<div class="po-head">'
-                        f'<div class="po-title">{esc(title)}</div>'
-                        + chips_html([row["Category"]], accent_first=True)
-                        + "</div>"
-                        f'<div class="po-sub">{esc(row["Supplier"] or "No supplier")}</div>'
-                        f'<div class="po-sub">PR {esc(row["PR No"]) if row["PR No"] else "—"}'
-                        f' &nbsp;|&nbsp; {esc(row["Date"]) if row["Date"] else "no date"}</div>'
-                        + bar_html(row["Sent %"])
-                        + f'<div class="po-pct">{pct_text(row["Sent %"])} sent'
-                        f' &nbsp;|&nbsp; {row["Items"]} items</div>'
-                        '<div class="po-nums">'
-                        f'<div><span>Required</span><b>{num(row["Required"])}</b></div>'
-                        f'<div><span>Sent</span><b>{num(row["Sent"])}</b></div>'
-                        f'<div><span>Remaining</span><b>{num(row["Remaining"])}</b></div>'
-                        "</div>",
-                        unsafe_allow_html=True,
-                    )
-
-                    st.button(
-                        "Open sheet",
-                        key=f"open_{row['Sheet']}",
-                        on_click=open_sheet,
-                        args=(row["Sheet"],),
-                        width="stretch",
-                    )
-
-    with st.expander("Compare all PR / PO sheets"):
-        display = df.copy()
-        display["Sent %"] = display["Sent %"].map(
-            lambda v: f"{v:.0%}" if pd.notna(v) else ""
-        )
-        show_table(display, height=250)
-
-        st.bar_chart(
-            df.set_index("Sheet")[["Required", "Sent", "Remaining"]],
-            color=CHART_COLORS,
-            stack=False,
-        )
+    st.bar_chart(df.set_index("Sheet")[["Required", "Sent", "Remaining"]])
 
 
 def show_empty_diag(data):
@@ -1399,13 +1033,13 @@ def show_sheet(sheet, data):
     elif kind == "pr":
         show_pr(data, sheet)
     elif kind == "pr_empty":
-        st.markdown(
-            '<div class="empty-state"><b>Empty PR template</b><br>'
-            "No quantities have been entered in this sheet yet. "
-            "It will show up here with its KPIs and tables as soon as "
-            "quantities are added in Excel.</div>",
-            unsafe_allow_html=True,
+        st.info(
+            "This PR sheet is an empty template – no quantities have been "
+            "entered yet."
         )
+        info = {k: v for k, v in data["info"].items() if v is not None}
+        if info:
+            st.write(info)
         show_empty_diag(data)
     elif kind == "total":
         show_total(data, sheet)
@@ -1413,6 +1047,22 @@ def show_sheet(sheet, data):
         st.error(f"Could not read this sheet: {data['message']}")
     else:
         show_generic(data, sheet)
+
+
+# =========================================================
+# HEADER
+# =========================================================
+
+st.markdown(
+    '<div class="project-title">🏗️ Hassan Allam Construction</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="project-subtitle">'
+    "Construction Projects & Pipeline Dashboard"
+    "</div>",
+    unsafe_allow_html=True,
+)
 
 
 # =========================================================
@@ -1469,21 +1119,13 @@ start_index = (
 )
 
 with st.sidebar:
-    st.markdown(
-        '<div class="side-brand">Hassan Allam Construction'
-        "<span>Projects dashboard</span></div>",
-        unsafe_allow_html=True,
-    )
-    st.divider()
+    st.markdown("## 🏗️ Menu")
 
     # ---------------- files ----------------
-    st.markdown(
-        f'<div class="side-label">Files ({len(project_names)})</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"##### 📁 Files  ·  {len(project_names)}")
 
     file_query = st.text_input(
-        ":material/search: Search files",
+        "🔎 Search files",
         key="file_search",
         placeholder="Type part of a file name...",
     )
@@ -1508,20 +1150,20 @@ with st.sidebar:
         key="project_select",
     )
 
-    with st.expander(f":material/folder: All files ({len(project_names)})"):
+    with st.expander(f"📄 All files ({len(project_names)})"):
         for f in excel_files:
             st.caption(f.name)
 
     st.divider()
 
     # ---------------- options ----------------
-    st.markdown('<div class="side-label">Options</div>', unsafe_allow_html=True)
+    st.markdown("##### ⚙️ Options")
 
     hide_empty = st.toggle(
         "Hide empty PR templates", value=True, key="hide_empty"
     )
 
-    st.toggle(":material/dark_mode: Dark mode", key="dark_mode")
+    st.toggle("🌙 Dark mode", key="dark_mode")
 
     st.divider()
     st.caption(f"App version: {APP_VERSION}")
@@ -1551,28 +1193,8 @@ visible_sheets = [
     if not (hide_empty and data["type"] == "pr_empty")
 ]
 
-if hide_empty and len(visible_sheets) < len(project_data):
-    hidden_count = len(project_data) - len(visible_sheets)
-else:
-    hidden_count = 0
 
-pr_with_data = sum(1 for d in project_data.values() if d["type"] == "pr")
-updated = datetime.fromtimestamp(selected_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
 
-header_chips = [
-    f"{len(project_data)} sheets",
-    f"{pr_with_data} PR / PO with data",
-    f"{hidden_count} empty templates hidden" if hidden_count else None,
-    f"Updated {updated}",
-]
-
-st.markdown(
-    '<div class="app-header"><div>'
-    '<div class="brand">Hassan Allam Construction &nbsp;|&nbsp; Projects dashboard</div>'
-    f'<div class="file-title">{esc(selected_project)}</div>'
-    "</div>" + chips_html(header_chips) + "</div>",
-    unsafe_allow_html=True,
-)
 
 
 # =========================================================
@@ -1597,28 +1219,35 @@ if st.session_state.get("selected_sheet") not in nav_items:
 
 
 # =========================================================
-# SHEET NAVIGATION
+# SHEET BUTTONS
 # =========================================================
 
-def nav_label(name):
-    if name == OVERVIEW:
-        return ":material/home: Overview"
-    return f"{SHEET_ICONS.get(project_data[name]['type'], ':material/table_chart:')} {name}"
+st.subheader("📑 PR & PO Sheets")
 
+BUTTONS_PER_ROW = 4
 
-section_title("PR & PO Sheets")
+for start in range(0, len(nav_items), BUTTONS_PER_ROW):
+    row = nav_items[start:start + BUTTONS_PER_ROW]
+    cols = st.columns(BUTTONS_PER_ROW)
 
-choice = st.pills(
-    "Sheets",
-    nav_items,
-    selection_mode="single",
-    default=st.session_state.selected_sheet,
-    format_func=nav_label,
-    label_visibility="collapsed",
-)
+    for i, name in enumerate(row):
+        with cols[i]:
+            if name == OVERVIEW:
+                label = "🏠 Overview"
+            else:
+                icon = SHEET_ICONS.get(project_data[name]["type"], "📄")
+                label = f"{icon} {name}"
 
-if choice is not None:
-    st.session_state.selected_sheet = choice
+            is_selected = st.session_state.selected_sheet == name
+
+            if st.button(
+                label,
+                key=f"sheet_{start}_{i}",
+                width="stretch",
+                type="primary" if is_selected else "secondary",
+            ):
+                st.session_state.selected_sheet = name
+                st.rerun()
 
 
 # =========================================================
@@ -1636,16 +1265,18 @@ if selected_sheet == OVERVIEW:
 else:
     st.query_params["sheet"] = selected_sheet
 
-st.write("")
+
+st.divider()
 
 if selected_sheet == OVERVIEW:
     show_overview(project_data, selected_project)
 else:
     data = project_data[selected_sheet]
 
+    st.subheader(f"{SHEET_ICONS.get(data['type'], '📄')} {selected_sheet}")
     st.caption(
-        f"{selected_sheet}  –  "
-        f"{SHEET_TYPE_LABELS.get(data['type'], data['type'])}"
+        f"Source: {selected_file.name}  |  "
+        f"Detected type: {SHEET_TYPE_LABELS.get(data['type'], data['type'])}"
     )
 
     show_sheet(selected_sheet, data)
