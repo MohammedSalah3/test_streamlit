@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v10c - empty sheet check"
+APP_VERSION = "v10d - empty sheet as-is"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -156,6 +156,10 @@ def arrow_safe(df):
     df = df.copy()
     for col in df.columns:
         if df[col].dtype == object:
+            if df[col].notna().sum() == 0:
+                df[col] = ""
+                continue
+
             converted = to_num(df[col])
             if converted.notna().sum() == df[col].notna().sum():
                 df[col] = converted
@@ -453,10 +457,11 @@ def parse_pr(grid):
         | (matrix_df.abs().sum(axis=1) != 0 if len(matrix_df.columns) else False)
     )
 
-    if not active.any():
-        return empty_result
+    is_empty = not active.any()
 
     def status(row):
+        if row["Req Qty"] == 0 and row["Send Qty"] == 0:
+            return "—"
         if row["Remain Qty"] < 0:
             return "Over-sent"
         if row["Req Qty"] > 0 and row["Remain Qty"] == 0:
@@ -525,7 +530,8 @@ def parse_pr(grid):
     )[items_df["Active"].values]
 
     return {
-        "type": "pr",
+        "type": "pr_empty" if is_empty else "pr",
+        "diag": empty_result["diag"],
         "info": info,
         "categories": categories,
         "items": items_df.reset_index(drop=True),
@@ -703,7 +709,7 @@ def parse_sheet(ws):
         result = parser(grid) if parser else None
 
         # PO number lives in the sheet name (e.g. "PO 94000171374 MASTER")
-        if result and result["type"] == "pr":
+        if result and result["type"] in ("pr", "pr_empty") and "summary" in result:
             match = re.search(r"\d{8,}", ws.title)
             result["summary"] = {
                 "PO No": match.group(0) if match else None,
@@ -830,7 +836,9 @@ def show_pr(data, sheet):
 
     with tab_items:
         only_active = st.checkbox(
-            "Only items with quantities", value=True, key=f"a_{sheet}"
+            "Only items with quantities",
+            value=(data["type"] != "pr_empty"),
+            key=f"a_{sheet}"
         )
         statuses = st.multiselect(
             "Status",
@@ -1035,12 +1043,10 @@ def show_sheet(sheet, data):
     elif kind == "pr_empty":
         st.info(
             "This PR sheet is an empty template – no quantities have been "
-            "entered yet."
+            "entered yet. It is shown as it is."
         )
-        info = {k: v for k, v in data["info"].items() if v is not None}
-        if info:
-            st.write(info)
-        show_empty_diag(data)
+        if "items" in data:
+            show_pr(data, sheet)
     elif kind == "total":
         show_total(data, sheet)
     elif kind == "error":
