@@ -23,15 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v11 - new UI"
+APP_VERSION = "v12 - unified palette"
 
 SHEET_ICONS = {
-    "unit_prices": "💰",
-    "pr": "📝",
-    "pr_empty": "⚪",
-    "total": "📊",
-    "generic": "📄",
-    "error": "⚠️",
+    "unit_prices": ":material/payments:",
+    "pr": ":material/description:",
+    "pr_empty": ":material/draft:",
+    "total": ":material/bar_chart:",
+    "generic": ":material/table_chart:",
+    "error": ":material/error:",
 }
 
 SHEET_TYPE_LABELS = {
@@ -49,15 +49,16 @@ st.markdown(
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
         :root {
-            --ink: #1F2933;
-            --muted: #667085;
-            --line: #E4E7EC;
+            --ink: #14283C;
+            --muted: #5E6E80;
+            --line: #D9E1E9;
             --surface: #FFFFFF;
-            --canvas: #F5F7FA;
-            --primary: #1D4E89;
-            --good: #2E7D5B;
-            --warn: #B7791F;
-            --bad: #B83232;
+            --canvas: #F2F5F8;
+            --primary: #1B3A5C;
+            --primary-soft: #E4ECF4;
+            --good: #2A7F73;
+            --warn: #B9801F;
+            --bad: #A63D3D;
         }
 
         .stApp { background: var(--canvas); }
@@ -93,10 +94,10 @@ st.markdown(
         .chips { display: flex; gap: 8px; flex-wrap: wrap; }
         .chip {
             font-size: 12.5px; padding: 4px 11px; border-radius: 999px;
-            background: #EEF2F7; color: #344054; border: 1px solid var(--line);
+            background: #EDF1F5; color: #3E4F61; border: 1px solid var(--line);
             white-space: nowrap;
         }
-        .chip.accent { background: #E6EEF8; color: var(--primary); border-color: #C9D9EE; }
+        .chip.accent { background: var(--primary-soft); color: var(--primary); border-color: #C5D4E4; }
 
         /* ---------- section titles ---------- */
         .section-title {
@@ -115,14 +116,22 @@ st.markdown(
             background: var(--surface); border: 1px solid var(--line);
             border-radius: 10px; padding: 14px 16px;
         }
-        .kpi .label { font-size: 12.5px; color: var(--muted); }
+        .kpi .label {
+            font-size: 12.5px; color: var(--muted);
+            display: flex; align-items: center; gap: 7px;
+        }
+        .kpi .label i {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--dot, transparent); display: inline-block;
+        }
+        .kpi.good { --dot: var(--good); }
+        .kpi.warn { --dot: var(--warn); }
+        .kpi.bad { --dot: var(--bad); }
         .kpi .value {
             font-size: 26px; font-weight: 600; color: var(--ink);
             font-variant-numeric: tabular-nums; line-height: 1.25;
         }
         .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .kpi.good .value { color: var(--good); }
-        .kpi.warn .value { color: var(--warn); }
         .kpi.bad .value { color: var(--bad); }
 
         /* ---------- progress bar ---------- */
@@ -830,14 +839,21 @@ def get_excel_files():
 # UI HELPERS (HTML pieces)
 # =========================================================
 
-STATUS_ICONS = {
-    "Completed": "🟢",
-    "Partial": "🟡",
-    "Over-sent": "🔴",
-    "Not started": "⚪",
+STATUS_STYLES = {
+    "Completed": ("#E1F1EE", "#1F6B60"),
+    "Partial": ("#F8EDD6", "#8A5A12"),
+    "Over-sent": ("#F6E1E1", "#8E2F2F"),
+    "Not started": ("#EAEEF2", "#52606F"),
 }
 
-CHART_COLORS = ["#1D4E89", "#2E7D5B", "#B7791F"]
+
+def style_status(value):
+    bg, fg = STATUS_STYLES.get(value, (None, None))
+    if not bg:
+        return ""
+    return f"background-color: {bg}; color: {fg}; font-weight: 500;"
+
+CHART_COLORS = ["#1B3A5C", "#2A7F73", "#C28A2C"]
 
 
 def esc(value):
@@ -862,9 +878,10 @@ def bar_html(fraction):
 
 def kpi(label, value, sub="", tone="", bar=None):
     sub_html = f'<div class="sub">{esc(sub)}</div>' if sub else ""
+    dot = "<i></i>" if tone else ""
     return (
         f'<div class="kpi {tone}">'
-        f'<div class="label">{esc(label)}</div>'
+        f'<div class="label">{dot}{esc(label)}</div>'
         f'<div class="value">{esc(value)}</div>'
         f"{sub_html}{bar_html(bar)}"
         "</div>"
@@ -906,9 +923,16 @@ def pct_text(value):
 # VIEWS
 # =========================================================
 
-def show_table(df, height=600, column_config=None):
+def show_table(df, height=600, column_config=None, status_col=None):
+    data = arrow_safe(df)
+
+    if status_col and status_col in data.columns:
+        styler = data.style
+        apply = getattr(styler, "map", None) or styler.applymap
+        data = apply(style_status, subset=[status_col])
+
     st.dataframe(
-        arrow_safe(df),
+        data,
         width="stretch",
         hide_index=True,
         height=height,
@@ -918,7 +942,7 @@ def show_table(df, height=600, column_config=None):
 
 def text_filter(df, columns, key):
     query = st.text_input(
-        "🔎 Search", key=key, placeholder="Item name or asset code..."
+        ":material/search: Search", key=key, placeholder="Item name or asset code..."
     )
 
     if not query:
@@ -1006,7 +1030,7 @@ def show_pr(data, sheet):
     )
 
     tab_items, tab_ship, tab_matrix = st.tabs(
-        ["📦 Items", "🚚 Shipments", "🧮 Items × Shipments"]
+        [":material/inventory_2: Items", ":material/local_shipping: Shipments", ":material/grid_on: Items × Shipments"]
     )
 
     with tab_items:
@@ -1014,16 +1038,15 @@ def show_pr(data, sheet):
 
         with f1:
             query = st.text_input(
-                "🔎 Search",
+                ":material/search: Search",
                 key=f"s_{sheet}",
                 placeholder="Item name or asset code...",
             )
         with f2:
             statuses = st.multiselect(
                 "Status",
-                list(STATUS_ICONS),
+                list(STATUS_STYLES),
                 key=f"st_{sheet}",
-                format_func=lambda x: f"{STATUS_ICONS[x]} {x}",
             )
         with f3:
             st.write("")
@@ -1052,9 +1075,6 @@ def show_pr(data, sheet):
             min(send / req, 1.0) * 100 if req > 0 else None
             for req, send in zip(view["Req Qty"], view["Send Qty"])
         ]
-        view["Status"] = view["Status"].map(
-            lambda x: f"{STATUS_ICONS.get(x, '')} {x}"
-        )
 
         ordered = [
             "No", "Asset Code", "Item", "Req Qty", "Send Qty",
@@ -1071,6 +1091,7 @@ def show_pr(data, sheet):
 
         show_table(
             view,
+            status_col="Status",
             column_config={
                 "Req Qty": st.column_config.NumberColumn("Required", format="localized"),
                 "Send Qty": st.column_config.NumberColumn("Sent", format="localized"),
@@ -1368,7 +1389,7 @@ start_index = (
 
 with st.sidebar:
     st.markdown(
-        '<div class="side-brand">🏗️ Hassan Allam Construction'
+        '<div class="side-brand">Hassan Allam Construction'
         "<span>Projects dashboard</span></div>",
         unsafe_allow_html=True,
     )
@@ -1381,7 +1402,7 @@ with st.sidebar:
     )
 
     file_query = st.text_input(
-        "🔎 Search files",
+        ":material/search: Search files",
         key="file_search",
         placeholder="Type part of a file name...",
     )
@@ -1406,7 +1427,7 @@ with st.sidebar:
         key="project_select",
     )
 
-    with st.expander(f"📄 All files ({len(project_names)})"):
+    with st.expander(f":material/folder: All files ({len(project_names)})"):
         for f in excel_files:
             st.caption(f.name)
 
@@ -1419,7 +1440,7 @@ with st.sidebar:
         "Hide empty PR templates", value=True, key="hide_empty"
     )
 
-    st.toggle("🌙 Dark mode", key="dark_mode")
+    st.toggle(":material/dark_mode: Dark mode", key="dark_mode")
 
     st.divider()
     st.caption(f"App version: {APP_VERSION}")
@@ -1500,11 +1521,11 @@ if st.session_state.get("selected_sheet") not in nav_items:
 
 def nav_label(name):
     if name == OVERVIEW:
-        return "🏠 Overview"
-    return f"{SHEET_ICONS.get(project_data[name]['type'], '📄')} {name}"
+        return ":material/home: Overview"
+    return f"{SHEET_ICONS.get(project_data[name]['type'], ':material/table_chart:')} {name}"
 
 
-section_title("📑 PR & PO Sheets")
+section_title("PR & PO Sheets")
 
 choice = st.pills(
     "Sheets",
@@ -1542,7 +1563,7 @@ else:
     data = project_data[selected_sheet]
 
     st.caption(
-        f"{SHEET_ICONS.get(data['type'], '📄')} {selected_sheet}  –  "
+        f"{selected_sheet}  –  "
         f"{SHEET_TYPE_LABELS.get(data['type'], data['type'])}"
     )
 
