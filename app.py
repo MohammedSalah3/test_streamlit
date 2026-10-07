@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v10 - PR & PO Sheets title"
+APP_VERSION = "v10b - no info bar"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -1112,17 +1112,6 @@ visible_sheets = [
     if not (hide_empty and data["type"] == "pr_empty")
 ]
 
-if hide_empty and len(visible_sheets) < len(project_data):
-    hidden_count = len(project_data) - len(visible_sheets)
-else:
-    hidden_count = 0
-
-st.info(
-    f"📁 Project: **{selected_project}**  |  "
-    f"📄 File: **{selected_file.name}**  |  "
-    f"📑 Sheets: **{len(project_data)}**"
-    + (f"  |  🙈 Hidden empty templates: **{hidden_count}**" if hidden_count else "")
-)
 
 
 
