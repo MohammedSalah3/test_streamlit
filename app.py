@@ -1,4 +1,3 @@
-import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -23,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v10d - empty sheet as-is"
+APP_VERSION = "v11 - no PO/PR columns + background"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -48,6 +47,20 @@ st.markdown(
     <style>
         .project-title { font-size: 30px; font-weight: 700; }
         .project-subtitle { color: #6b7280; margin-bottom: 20px; }
+
+        /* Blueprint-style background */
+        .stApp {
+            background-color: #f4f7fb;
+            background-image:
+                linear-gradient(rgba(30, 64, 175, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 64, 175, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        [data-testid="stSidebar"] {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(6px);
+        }
 
         /* Hide GitHub icon, Deploy button, main menu and footer.
            NOTE: stToolbar itself must stay visible - it holds the
@@ -509,8 +522,9 @@ def parse_pr(grid):
     req_total = float(act["Req Qty"].sum())
     send_total = float(act["Send Qty"].sum())
 
+    # NOTE: PR No / PO No were removed on purpose - the number is already
+    # part of the sheet name (e.g. "PR-70025560").
     summary = {
-        "PR No": info.get("PR# No"),
         "Date": info.get("PR# Date"),
         "Category": ", ".join(categories) or None,
         "Supplier": supplier,
@@ -708,14 +722,6 @@ def parse_sheet(ws):
 
         result = parser(grid) if parser else None
 
-        # PO number lives in the sheet name (e.g. "PO 94000171374 MASTER")
-        if result and result["type"] in ("pr", "pr_empty") and "summary" in result:
-            match = re.search(r"\d{8,}", ws.title)
-            result["summary"] = {
-                "PO No": match.group(0) if match else None,
-                **result["summary"],
-            }
-
         # parser could not understand the sheet -> safe fallback
         return result or parse_generic(grid)
 
@@ -801,13 +807,11 @@ def show_pr(data, sheet):
     info = data["info"]
     summary = data["summary"]
 
-    c = st.columns(6)
-    c[0].metric("PO No", summary.get("PO No") or "—")
-    c[1].metric("PR No", fmt(summary["PR No"]) or "—")
-    c[2].metric("PR Date", fmt(summary["Date"]) or "—")
-    c[3].metric("Category", summary["Category"] or "—")
-    c[4].metric("Supplier", summary["Supplier"] or "—")
-    c[5].metric("Items", summary["Items"])
+    c = st.columns(4)
+    c[0].metric("PR Date", fmt(summary["Date"]) or "—")
+    c[1].metric("Category", summary["Category"] or "—")
+    c[2].metric("Supplier", summary["Supplier"] or "—")
+    c[3].metric("Items", summary["Items"])
 
     extra = [
         f"**{k}:** {fmt(v)}"
@@ -1000,6 +1004,7 @@ def show_overview(project_data, project_name):
 
     st.markdown("##### PR / PO sheets")
     display = df.copy()
+    display["Date"] = display["Date"].map(fmt)
     display["Sent %"] = display["Sent %"].map(
         lambda v: f"{v:.0%}" if pd.notna(v) else ""
     )
@@ -1198,9 +1203,6 @@ visible_sheets = [
     for name, data in project_data.items()
     if not (hide_empty and data["type"] == "pr_empty")
 ]
-
-
-
 
 
 # =========================================================
