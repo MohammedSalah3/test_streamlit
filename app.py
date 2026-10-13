@@ -1,4 +1,3 @@
-import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -23,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v10d - empty sheet as-is"
+APP_VERSION = "v21 - all item names list"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -101,7 +100,7 @@ def clean_value(value):
 
 def fmt(value):
     """Convert any cell value to a display-friendly string."""
-    if value is None:
+    if value is None or value is pd.NaT:
         return ""
     if isinstance(value, (datetime, date)):
         return value.strftime("%Y-%m-%d")
@@ -115,6 +114,13 @@ def fmt(value):
 
 def is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def blank_zero(value):
+    """A 0 in a code/name cell means 'nothing here' -> show it empty."""
+    if is_number(value) and value == 0:
+        return None
+    return value
 
 
 def has_value(value):
@@ -148,6 +154,11 @@ def unique_names(names):
 
 
 def to_num(series):
+    """Convert to numbers. Text such as "1,200" or " 50 " is also read."""
+    if series.dtype == object:
+        series = series.map(
+            lambda v: v.replace(",", "").strip() if isinstance(v, str) else v
+        )
     return pd.to_numeric(series, errors="coerce")
 
 
@@ -400,13 +411,13 @@ def parse_pr(grid):
             continue
 
         if name is None:
-            name = fmt(code) if code not in (None, 0) else f"Row {r + 1}"
+            name = fmt(code) if code not in (None, 0) else f"(no name) - row {r + 1}"
 
         items.append(
             {
                 "No": g(grid, r, c_no),
-                "Asset Code": g(grid, r, c_code),
-                "Full Serial": g(grid, r, c_serial),
+                "Asset Code": blank_zero(g(grid, r, c_code)),
+                "Full Serial": blank_zero(g(grid, r, c_serial)),
                 "Item": name,
                 "Req Qty": g(grid, r, c_req),
                 "Send Qty": g(grid, r, c_send),
@@ -509,8 +520,9 @@ def parse_pr(grid):
     req_total = float(act["Req Qty"].sum())
     send_total = float(act["Send Qty"].sum())
 
+    # NOTE: PR No / PO No were removed on purpose - the number is already
+    # part of the sheet name (e.g. "PR-70025560").
     summary = {
-        "PR No": info.get("PR# No"),
         "Date": info.get("PR# Date"),
         "Category": ", ".join(categories) or None,
         "Supplier": supplier,
@@ -594,14 +606,61 @@ def parse_total(grid):
     cols = list(names.keys())
     item_rows = []
     footer_rows = []
+    dropped = []
+
+    item_col = "ITEMS NAME"
+    value_cols = [c for c in cols if " | " in names[c]]
+
+    # The footer (cost totals) starts at the first row whose label is one
+    # of these. Every labelled row BEFORE it is an item - even when its
+    # "No" and quantity cells are empty (rows added by hand / formulas
+    # that were never calculated).
+    footer_words = ("PURCH", "EXT HIRE", "INT HIRE", "HIRE RATE", "PERCENTAGE")
+    first_footer = next(
+        (
+            r
+            for r in range(h + 1, len(grid))
+            if isinstance(g(grid, r, 3), str)
+            and any(w in g(grid, r, 3).upper() for w in footer_words)
+        ),
+        None,
+    )
 
     for r in range(h + 1, len(grid)):
         row = {names[c]: g(grid, r, c) for c in cols}
 
+        label = g(grid, r, 3)
+
+        if first_footer is not None and r >= first_footer:
+            if isinstance(label, str):
+                footer_rows.append(row)
+            continue
+
+        numbers = [
+            v for v in (g(grid, r, c) for c in value_cols)
+            if is_number(v) and v != 0
+        ]
+
         if is_number(g(grid, r, 0)):
+            # normal item row (has an item number)
+            row["_row"] = r + 1
             item_rows.append(row)
-        elif isinstance(g(grid, r, 3), str):
-            footer_rows.append(row)
+        elif isinstance(label, str):
+            if first_footer is None:
+                footer_rows.append(row)
+            else:
+                # named row above the footer = an item
+                row["_row"] = r + 1
+                item_rows.append(row)
+        elif numbers:
+            # numbers but no item number / name: NOT counted, but reported
+            dropped.append(
+                {
+                    "Excel row": r + 1,
+                    "Sum of numbers": float(sum(numbers)),
+                    "Reason": "No item number or name",
+                }
+            )
 
     items = pd.DataFrame(item_rows)
     footer = pd.DataFrame(footer_rows)
@@ -609,19 +668,41 @@ def parse_total(grid):
     if items.empty:
         return None
 
-    item_col = "ITEMS NAME"
-    code_col = "ASSET CODE"
-
-    keep = items[item_col].notna() | (
-        items[code_col].notna() & (items[code_col] != 0)
-    )
-    items = items[keep].copy()
-    items = items.rename(columns={item_col: "Item"})
-
     numeric_cols = [c for c in items.columns if " | " in c]
 
     for col in numeric_cols:
         items[col] = to_num(items[col]).fillna(0)
+
+    # a row with an item number (No) is ALWAYS kept, even if it has no
+    # name / quantity - it is a real line of the Excel table.
+    # (ASSET CODE is NOT used anywhere to decide what is a row.)
+    has_no = (
+        to_num(items["No"]).notna()
+        if "No" in items.columns
+        else pd.Series(False, index=items.index)
+    )
+
+    keep = (
+        has_no
+        | items[item_col].notna()
+        | (items[numeric_cols].abs().sum(axis=1) != 0)
+    )
+
+    for _, lost in items[~keep].iterrows():
+        dropped.append(
+            {
+                "Excel row": lost["_row"],
+                "Sum of numbers": 0.0,
+                "Reason": "Empty row",
+            }
+        )
+
+    items = items[keep].copy()
+    items[item_col] = items[item_col].fillna(
+        items["_row"].map(lambda n: f"(no name) - row {n}")
+    )
+    items = items.drop(columns=["_row"])
+    items = items.rename(columns={item_col: "Item"})
 
     groups = []
     for c in cols:
@@ -676,6 +757,7 @@ def parse_total(grid):
         "groups": groups,
         "areas": areas,
         "group_totals": group_totals,
+        "dropped": pd.DataFrame(dropped),
     }
 
 
@@ -707,14 +789,6 @@ def parse_sheet(ws):
         parser = PARSERS.get(sheet_type)
 
         result = parser(grid) if parser else None
-
-        # PO number lives in the sheet name (e.g. "PO 94000171374 MASTER")
-        if result and result["type"] in ("pr", "pr_empty") and "summary" in result:
-            match = re.search(r"\d{8,}", ws.title)
-            result["summary"] = {
-                "PO No": match.group(0) if match else None,
-                **result["summary"],
-            }
 
         # parser could not understand the sheet -> safe fallback
         return result or parse_generic(grid)
@@ -801,13 +875,11 @@ def show_pr(data, sheet):
     info = data["info"]
     summary = data["summary"]
 
-    c = st.columns(6)
-    c[0].metric("PO No", summary.get("PO No") or "—")
-    c[1].metric("PR No", fmt(summary["PR No"]) or "—")
-    c[2].metric("PR Date", fmt(summary["Date"]) or "—")
-    c[3].metric("Category", summary["Category"] or "—")
-    c[4].metric("Supplier", summary["Supplier"] or "—")
-    c[5].metric("Items", summary["Items"])
+    c = st.columns(4)
+    c[0].metric("PR Date", fmt(summary["Date"]) or "—")
+    c[1].metric("Category", summary["Category"] or "—")
+    c[2].metric("Supplier", summary["Supplier"] or "—")
+    c[3].metric("Items", summary["Items"])
 
     extra = [
         f"**{k}:** {fmt(v)}"
@@ -846,13 +918,23 @@ def show_pr(data, sheet):
             key=f"st_{sheet}",
         )
 
+        no_code = st.checkbox(
+            "Only items without asset code", value=False, key=f"nc_{sheet}"
+        )
+
         df = active if only_active else items
         if statuses:
             df = df[df["Status"].isin(statuses)]
+        if no_code:
+            df = df[df["Asset Code"].isna()]
 
         df = text_filter(df, ["Item", "Asset Code"], f"s_{sheet}")
 
         show_table(df.drop(columns=["Active", "Full Serial"]))
+
+        show_all_names(
+            items, ["No", "Item", "Req Qty", "Send Qty", "Remain Qty", "Status"], sheet
+        )
 
     with tab_ship:
         if data["shipments"].empty:
@@ -865,6 +947,40 @@ def show_pr(data, sheet):
             st.info("No shipments recorded in this sheet.")
         else:
             show_table(data["matrix"])
+
+
+def with_footer(df, footer, searching):
+    """Put the Excel footer rows (Total Int Hire Rate ...) back at the
+    bottom of the items table, where they are in the Excel sheet."""
+    if footer is None or footer.empty or searching:
+        return df
+
+    rows = footer.rename(columns={"Label": "Item"}).copy()
+    rows = rows.reindex(columns=df.columns)
+
+    return pd.concat([df, rows], ignore_index=True)
+
+
+def show_all_names(df, cols, sheet):
+    """A compact list of EVERY item name in the sheet (no quantity filter)."""
+    cols = [c for c in cols if c in df.columns]
+
+    with st.expander(f"🔤 All item names ({len(df):,})"):
+        query = st.text_input(
+            "🔎 Search names", key=f"an_{sheet}", placeholder="Item name..."
+        )
+
+        view = df[cols]
+
+        if query:
+            view = view[
+                view["Item"]
+                .astype(str)
+                .str.contains(query, case=False, na=False, regex=False)
+            ]
+
+        st.caption(f"{len(view):,} names")
+        show_table(view, height=450)
 
 
 def show_total(data, sheet):
@@ -932,20 +1048,43 @@ def show_total(data, sheet):
 
     df = items[base_cols + value_cols]
 
+    qty_cols = [c for c in items.columns if " | " in c]
+    with_qty = int((items[qty_cols].abs().sum(axis=1) != 0).sum()) if qty_cols else 0
+    st.caption(
+        f"Rows read from Excel: {len(items):,}  |  rows with quantities: {with_qty:,}"
+    )
+
     only_active = st.checkbox(
         "Only items with quantities", value=True, key=f"ta_{sheet}"
     )
     if only_active and value_cols:
         df = df[(df[value_cols].abs().sum(axis=1) != 0)]
 
-    df = text_filter(df, ["Item", "ASSET CODE"], f"s_{sheet}")
+    df = text_filter(df, ["Item"], f"s_{sheet}")
 
     st.caption(f"{len(df):,} items")
-    show_table(df)
+    show_table(with_footer(df, footer, bool(st.session_state.get(f"s_{sheet}"))))
+
+    show_all_names(
+        items,
+        ["No", "Item", "Total Summary | T. REQ", "Total Summary | T. SEND",
+         "Total Summary | T. REMAIN"],
+        sheet,
+    )
 
     if not footer.empty:
         with st.expander("Footer totals (as in the Excel sheet)"):
             show_table(footer, height=250)
+
+    dropped = data.get("dropped")
+    if dropped is not None and not dropped.empty:
+        with st.expander(f"⚠️ Rows with numbers that were NOT counted ({len(dropped)})"):
+            st.caption(
+                "These Excel rows contain numbers but no item number, name "
+                "or asset code, so the app did not count them (they may be "
+                "total rows). If your missing quantity is here, tell me."
+            )
+            show_table(dropped, height=250)
 
 
 def show_generic(data, sheet):
@@ -1000,6 +1139,7 @@ def show_overview(project_data, project_name):
 
     st.markdown("##### PR / PO sheets")
     display = df.copy()
+    display["Date"] = display["Date"].map(fmt)
     display["Sent %"] = display["Sent %"].map(
         lambda v: f"{v:.0%}" if pd.notna(v) else ""
     )
@@ -1198,9 +1338,6 @@ visible_sheets = [
     for name, data in project_data.items()
     if not (hide_empty and data["type"] == "pr_empty")
 ]
-
-
-
 
 
 # =========================================================
