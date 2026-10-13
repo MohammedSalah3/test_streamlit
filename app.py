@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v16 - items without asset code"
+APP_VERSION = "v17 - last rows of total sheet fixed"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -612,12 +612,32 @@ def parse_total(grid):
     code_col = "ASSET CODE"
     value_cols = [c for c in cols if " | " in names[c]]
 
+    # The footer (cost totals) starts at the first row whose label is one
+    # of these. Every labelled row BEFORE it is an item - even when its
+    # "No" and quantity cells are empty (rows added by hand / formulas
+    # that were never calculated).
+    footer_words = ("PURCH", "EXT HIRE", "PERCENTAGE")
+    first_footer = next(
+        (
+            r
+            for r in range(h + 1, len(grid))
+            if isinstance(g(grid, r, 3), str)
+            and any(w in g(grid, r, 3).upper() for w in footer_words)
+        ),
+        None,
+    )
+
     for r in range(h + 1, len(grid)):
         row = {names[c]: g(grid, r, c) for c in cols}
 
         label = g(grid, r, 3)
         code = row.get(code_col)
         has_code = code not in (None, 0)
+
+        if first_footer is not None and r >= first_footer:
+            if isinstance(label, str):
+                footer_rows.append(row)
+            continue
 
         numbers = [
             v for v in (g(grid, r, c) for c in value_cols)
@@ -633,7 +653,12 @@ def parse_total(grid):
             row["_row"] = r + 1
             item_rows.append(row)
         elif isinstance(label, str):
-            footer_rows.append(row)
+            if first_footer is None:
+                footer_rows.append(row)
+            else:
+                # labelled row above the footer = an item
+                row["_row"] = r + 1
+                item_rows.append(row)
         elif has_code:
             row["_row"] = r + 1
             item_rows.append(row)
