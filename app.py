@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v17 - last rows of total sheet fixed"
+APP_VERSION = "v18 - footer rows fixed (tested on real file)"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -616,7 +616,7 @@ def parse_total(grid):
     # of these. Every labelled row BEFORE it is an item - even when its
     # "No" and quantity cells are empty (rows added by hand / formulas
     # that were never calculated).
-    footer_words = ("PURCH", "EXT HIRE", "PERCENTAGE")
+    footer_words = ("PURCH", "EXT HIRE", "INT HIRE", "HIRE RATE", "PERCENTAGE")
     first_footer = next(
         (
             r
