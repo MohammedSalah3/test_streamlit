@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v14 - total sheet fix"
+APP_VERSION = "v15 - total sheet keeps every numbered row"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -652,8 +652,17 @@ def parse_total(grid):
         items[col] = to_num(items[col]).fillna(0)
 
     # keep a row when it has a name, an asset code or ANY quantity
+    # a row with an item number (No) is ALWAYS kept, even if it has no
+    # name / asset code / quantity - it is a real line of the Excel table
+    has_no = (
+        to_num(items["No"]).notna()
+        if "No" in items.columns
+        else pd.Series(False, index=items.index)
+    )
+
     keep = (
-        items[item_col].notna()
+        has_no
+        | items[item_col].notna()
         | (items[code_col].notna() & (items[code_col] != 0))
         | (items[numeric_cols].abs().sum(axis=1) != 0)
     )
@@ -973,6 +982,12 @@ def show_total(data, sheet):
             st.caption(f"Area = {fmt(area)}")
 
     df = items[base_cols + value_cols]
+
+    qty_cols = [c for c in items.columns if " | " in c]
+    with_qty = int((items[qty_cols].abs().sum(axis=1) != 0).sum()) if qty_cols else 0
+    st.caption(
+        f"Rows read from Excel: {len(items):,}  |  rows with quantities: {with_qty:,}"
+    )
 
     only_active = st.checkbox(
         "Only items with quantities", value=True, key=f"ta_{sheet}"
