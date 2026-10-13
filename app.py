@@ -114,7 +114,7 @@ def clean_value(value):
 
 def fmt(value):
     """Convert any cell value to a display-friendly string."""
-    if value is None:
+    if value is None or value is pd.NaT:
         return ""
     if isinstance(value, (datetime, date)):
         return value.strftime("%Y-%m-%d")
