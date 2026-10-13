@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v21 - all item names list"
+APP_VERSION = "v22 - main tables show all items"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -909,7 +909,7 @@ def show_pr(data, sheet):
     with tab_items:
         only_active = st.checkbox(
             "Only items with quantities",
-            value=(data["type"] != "pr_empty"),
+            value=False,
             key=f"a_{sheet}"
         )
         statuses = st.multiselect(
@@ -931,10 +931,6 @@ def show_pr(data, sheet):
         df = text_filter(df, ["Item", "Asset Code"], f"s_{sheet}")
 
         show_table(df.drop(columns=["Active", "Full Serial"]))
-
-        show_all_names(
-            items, ["No", "Item", "Req Qty", "Send Qty", "Remain Qty", "Status"], sheet
-        )
 
     with tab_ship:
         if data["shipments"].empty:
@@ -959,28 +955,6 @@ def with_footer(df, footer, searching):
     rows = rows.reindex(columns=df.columns)
 
     return pd.concat([df, rows], ignore_index=True)
-
-
-def show_all_names(df, cols, sheet):
-    """A compact list of EVERY item name in the sheet (no quantity filter)."""
-    cols = [c for c in cols if c in df.columns]
-
-    with st.expander(f"🔤 All item names ({len(df):,})"):
-        query = st.text_input(
-            "🔎 Search names", key=f"an_{sheet}", placeholder="Item name..."
-        )
-
-        view = df[cols]
-
-        if query:
-            view = view[
-                view["Item"]
-                .astype(str)
-                .str.contains(query, case=False, na=False, regex=False)
-            ]
-
-        st.caption(f"{len(view):,} names")
-        show_table(view, height=450)
 
 
 def show_total(data, sheet):
@@ -1055,7 +1029,7 @@ def show_total(data, sheet):
     )
 
     only_active = st.checkbox(
-        "Only items with quantities", value=True, key=f"ta_{sheet}"
+        "Only items with quantities", value=False, key=f"ta_{sheet}"
     )
     if only_active and value_cols:
         df = df[(df[value_cols].abs().sum(axis=1) != 0)]
@@ -1064,13 +1038,6 @@ def show_total(data, sheet):
 
     st.caption(f"{len(df):,} items")
     show_table(with_footer(df, footer, bool(st.session_state.get(f"s_{sheet}"))))
-
-    show_all_names(
-        items,
-        ["No", "Item", "Total Summary | T. REQ", "Total Summary | T. SEND",
-         "Total Summary | T. REMAIN"],
-        sheet,
-    )
 
     if not footer.empty:
         with st.expander("Footer totals (as in the Excel sheet)"):
