@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v13 - no PO/PR columns, no background"
+APP_VERSION = "v14 - total sheet fix"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -147,6 +147,11 @@ def unique_names(names):
 
 
 def to_num(series):
+    """Convert to numbers. Text such as "1,200" or " 50 " is also read."""
+    if series.dtype == object:
+        series = series.map(
+            lambda v: v.replace(",", "").strip() if isinstance(v, str) else v
+        )
     return pd.to_numeric(series, errors="coerce")
 
 
@@ -594,14 +599,46 @@ def parse_total(grid):
     cols = list(names.keys())
     item_rows = []
     footer_rows = []
+    dropped = []
+
+    item_col = "ITEMS NAME"
+    code_col = "ASSET CODE"
+    value_cols = [c for c in cols if " | " in names[c]]
 
     for r in range(h + 1, len(grid)):
         row = {names[c]: g(grid, r, c) for c in cols}
 
+        label = g(grid, r, 3)
+        code = row.get(code_col)
+        has_code = code not in (None, 0)
+
+        numbers = [
+            v for v in (g(grid, r, c) for c in value_cols)
+            if is_number(v) and v != 0
+        ]
+
         if is_number(g(grid, r, 0)):
+            # normal item row
+            row["_row"] = r + 1
             item_rows.append(row)
-        elif isinstance(g(grid, r, 3), str):
+        elif isinstance(label, str) and has_code:
+            # has an asset code -> it is an item, even if "No" is missing
+            row["_row"] = r + 1
+            item_rows.append(row)
+        elif isinstance(label, str):
             footer_rows.append(row)
+        elif has_code:
+            row["_row"] = r + 1
+            item_rows.append(row)
+        elif numbers:
+            # numbers but no label / code / No: NOT counted, but reported
+            dropped.append(
+                {
+                    "Excel row": r + 1,
+                    "Sum of numbers": float(sum(numbers)),
+                    "Reason": "No item number, name or asset code",
+                }
+            )
 
     items = pd.DataFrame(item_rows)
     footer = pd.DataFrame(footer_rows)
@@ -609,19 +646,33 @@ def parse_total(grid):
     if items.empty:
         return None
 
-    item_col = "ITEMS NAME"
-    code_col = "ASSET CODE"
-
-    keep = items[item_col].notna() | (
-        items[code_col].notna() & (items[code_col] != 0)
-    )
-    items = items[keep].copy()
-    items = items.rename(columns={item_col: "Item"})
-
     numeric_cols = [c for c in items.columns if " | " in c]
 
     for col in numeric_cols:
         items[col] = to_num(items[col]).fillna(0)
+
+    # keep a row when it has a name, an asset code or ANY quantity
+    keep = (
+        items[item_col].notna()
+        | (items[code_col].notna() & (items[code_col] != 0))
+        | (items[numeric_cols].abs().sum(axis=1) != 0)
+    )
+
+    for _, lost in items[~keep].iterrows():
+        dropped.append(
+            {
+                "Excel row": lost["_row"],
+                "Sum of numbers": 0.0,
+                "Reason": "Empty row",
+            }
+        )
+
+    items = items[keep].copy()
+    items[item_col] = items[item_col].fillna(
+        items["_row"].map(lambda n: f"Row {n}")
+    )
+    items = items.drop(columns=["_row"])
+    items = items.rename(columns={item_col: "Item"})
 
     groups = []
     for c in cols:
@@ -676,6 +727,7 @@ def parse_total(grid):
         "groups": groups,
         "areas": areas,
         "group_totals": group_totals,
+        "dropped": pd.DataFrame(dropped),
     }
 
 
@@ -936,6 +988,16 @@ def show_total(data, sheet):
     if not footer.empty:
         with st.expander("Footer totals (as in the Excel sheet)"):
             show_table(footer, height=250)
+
+    dropped = data.get("dropped")
+    if dropped is not None and not dropped.empty:
+        with st.expander(f"⚠️ Rows with numbers that were NOT counted ({len(dropped)})"):
+            st.caption(
+                "These Excel rows contain numbers but no item number, name "
+                "or asset code, so the app did not count them (they may be "
+                "total rows). If your missing quantity is here, tell me."
+            )
+            show_table(dropped, height=250)
 
 
 def show_generic(data, sheet):
