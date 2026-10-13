@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v18 - footer rows fixed (tested on real file)"
+APP_VERSION = "v19 - footer rows back at the bottom of the table"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -959,6 +959,18 @@ def show_pr(data, sheet):
             show_table(data["matrix"])
 
 
+def with_footer(df, footer, searching):
+    """Put the Excel footer rows (Total Int Hire Rate ...) back at the
+    bottom of the items table, where they are in the Excel sheet."""
+    if footer is None or footer.empty or searching:
+        return df
+
+    rows = footer.rename(columns={"Label": "Item"}).copy()
+    rows = rows.reindex(columns=df.columns)
+
+    return pd.concat([df, rows], ignore_index=True)
+
+
 def show_total(data, sheet):
     footer = data["footer"]
 
@@ -1045,7 +1057,7 @@ def show_total(data, sheet):
     df = text_filter(df, ["Item", "ASSET CODE"], f"s_{sheet}")
 
     st.caption(f"{len(df):,} items")
-    show_table(df)
+    show_table(with_footer(df, footer, bool(st.session_state.get(f"s_{sheet}"))))
 
     if not footer.empty:
         with st.expander("Footer totals (as in the Excel sheet)"):
