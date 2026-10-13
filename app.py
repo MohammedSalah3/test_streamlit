@@ -1,4 +1,3 @@
-import base64
 from datetime import date, datetime
 from pathlib import Path
 
@@ -23,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v12 - photo background"
+APP_VERSION = "v13 - no PO/PR columns, no background"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -48,11 +47,6 @@ st.markdown(
     <style>
         .project-title { font-size: 30px; font-weight: 700; }
         .project-subtitle { color: #6b7280; margin-bottom: 20px; }
-
-        [data-testid="stSidebar"] {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(6px);
-        }
 
         /* Hide GitHub icon, Deploy button, main menu and footer.
            NOTE: stToolbar itself must stay visible - it holds the
@@ -83,70 +77,6 @@ DARK_CSS = """
     }
 </style>
 """
-
-
-# Photo background.
-# Put your picture in an  assets  folder next to app.py and name it
-# pexels-jiyoung-kim-4513940.jpg (or background.jpg / .png / .webp).
-# Or paste a direct image link below instead (leave "" to not use it).
-BACKGROUND_URL = ""
-BACKGROUND_FILES = [
-    "pexels-jiyoung-kim-4513940.jpg",
-    "background.jpg",
-    "background.jpeg",
-    "background.png",
-    "background.webp",
-]
-MIME_TYPES = {
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-    ".webp": "image/webp",
-}
-
-
-@st.cache_data(show_spinner=False)
-def encode_image(path_str, modified_time):
-    path = Path(path_str)
-    data = base64.b64encode(path.read_bytes()).decode()
-    return f"data:{MIME_TYPES[path.suffix.lower()]};base64,{data}"
-
-
-def background_css():
-    image = None
-
-    for name in BACKGROUND_FILES:
-        path = BASE_DIR / "assets" / name
-        if path.exists():
-            image = encode_image(str(path), path.stat().st_mtime)
-            break
-
-    if image is None and BACKGROUND_URL.strip():
-        image = BACKGROUND_URL.strip()
-
-    if image is None:
-        return ""
-
-    return f"""
-    <style>
-        .stApp {{
-            background-image: url("{image}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }}
-
-        /* white veil behind the content so text stays readable */
-        [data-testid="stMainBlockContainer"] {{
-            background: rgba(255, 255, 255, 0.88);
-            border-radius: 16px;
-            padding: 2rem 2rem 3rem 2rem;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-        }}
-    </style>
-    """
 
 
 # =========================================================
@@ -1238,8 +1168,6 @@ with st.sidebar:
 
 if st.session_state.get("dark_mode"):
     st.markdown(DARK_CSS, unsafe_allow_html=True)
-else:
-    st.markdown(background_css(), unsafe_allow_html=True)
 
 
 # =========================================================
