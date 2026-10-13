@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v22 - main tables show all items"
+APP_VERSION = "v20 - Total table not linked to ASSET CODE"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -909,7 +909,7 @@ def show_pr(data, sheet):
     with tab_items:
         only_active = st.checkbox(
             "Only items with quantities",
-            value=False,
+            value=(data["type"] != "pr_empty"),
             key=f"a_{sheet}"
         )
         statuses = st.multiselect(
@@ -1029,7 +1029,7 @@ def show_total(data, sheet):
     )
 
     only_active = st.checkbox(
-        "Only items with quantities", value=False, key=f"ta_{sheet}"
+        "Only items with quantities", value=True, key=f"ta_{sheet}"
     )
     if only_active and value_cols:
         df = df[(df[value_cols].abs().sum(axis=1) != 0)]
