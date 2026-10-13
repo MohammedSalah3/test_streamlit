@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_FOLDER = BASE_DIR / "data"
 
 OVERVIEW = "__overview__"
-APP_VERSION = "v15 - total sheet keeps every numbered row"
+APP_VERSION = "v16 - items without asset code"
 
 SHEET_ICONS = {
     "unit_prices": "💰",
@@ -114,6 +114,13 @@ def fmt(value):
 
 def is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def blank_zero(value):
+    """A 0 in a code/name cell means 'nothing here' -> show it empty."""
+    if is_number(value) and value == 0:
+        return None
+    return value
 
 
 def has_value(value):
@@ -404,13 +411,13 @@ def parse_pr(grid):
             continue
 
         if name is None:
-            name = fmt(code) if code not in (None, 0) else f"Row {r + 1}"
+            name = fmt(code) if code not in (None, 0) else f"(no name) - row {r + 1}"
 
         items.append(
             {
                 "No": g(grid, r, c_no),
-                "Asset Code": g(grid, r, c_code),
-                "Full Serial": g(grid, r, c_serial),
+                "Asset Code": blank_zero(g(grid, r, c_code)),
+                "Full Serial": blank_zero(g(grid, r, c_serial)),
                 "Item": name,
                 "Req Qty": g(grid, r, c_req),
                 "Send Qty": g(grid, r, c_send),
@@ -678,8 +685,11 @@ def parse_total(grid):
 
     items = items[keep].copy()
     items[item_col] = items[item_col].fillna(
-        items["_row"].map(lambda n: f"Row {n}")
+        items["_row"].map(lambda n: f"(no name) - row {n}")
     )
+    items[code_col] = items[code_col].map(blank_zero)
+    if "FULL SERIAL" in items.columns:
+        items["FULL SERIAL"] = items["FULL SERIAL"].map(blank_zero)
     items = items.drop(columns=["_row"])
     items = items.rename(columns={item_col: "Item"})
 
@@ -897,9 +907,15 @@ def show_pr(data, sheet):
             key=f"st_{sheet}",
         )
 
+        no_code = st.checkbox(
+            "Only items without asset code", value=False, key=f"nc_{sheet}"
+        )
+
         df = active if only_active else items
         if statuses:
             df = df[df["Status"].isin(statuses)]
+        if no_code:
+            df = df[df["Asset Code"].isna()]
 
         df = text_filter(df, ["Item", "Asset Code"], f"s_{sheet}")
 
@@ -994,6 +1010,12 @@ def show_total(data, sheet):
     )
     if only_active and value_cols:
         df = df[(df[value_cols].abs().sum(axis=1) != 0)]
+
+    no_code = st.checkbox(
+        "Only items without asset code", value=False, key=f"nc_{sheet}"
+    )
+    if no_code and "ASSET CODE" in df.columns:
+        df = df[df["ASSET CODE"].isna()]
 
     df = text_filter(df, ["Item", "ASSET CODE"], f"s_{sheet}")
 
